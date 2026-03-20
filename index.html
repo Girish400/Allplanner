@@ -124,6 +124,57 @@
 
         .status-text { font-size: 14px; color: #555; margin: 0 0 4px; }
     </style>
+
+    <!-- ============================================================
+         CRITICAL: Clean OAuth URL params BEFORE any script loads
+         This must run synchronously before Firebase module imports
+         to prevent Firebase from auto-processing stale redirect state
+    ============================================================ -->
+    <script>
+        (function() {
+            // Detect Safari/iOS FIRST
+            var ua = navigator.userAgent;
+            var isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
+            var isIOS = /iPad|iPhone|iPod/.test(ua) || 
+                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            
+            // Store for later use
+            window.__SAFARI_POPUP_ONLY__ = isSafari || isIOS;
+            
+            // Clean OAuth URL parameters for Safari/iOS
+            // This MUST happen before Firebase loads to prevent auth/missing-initial-state errors
+            if (window.__SAFARI_POPUP_ONLY__) {
+                var url = new URL(window.location.href);
+                var oauthParams = ['state', 'code', 'scope', 'authuser', 'prompt', 'apiKey', 
+                                   'appName', 'authType', 'redirectUrl', 'v', 'eventId'];
+                var hasOAuthParams = false;
+                
+                oauthParams.forEach(function(param) {
+                    if (url.searchParams.has(param)) {
+                        url.searchParams.delete(param);
+                        hasOAuthParams = true;
+                    }
+                });
+                
+                if (hasOAuthParams) {
+                    // Replace URL synchronously BEFORE Firebase initializes
+                    window.history.replaceState({}, document.title, 
+                        url.pathname + (url.search || '') + (url.hash || ''));
+                    
+                    // Also clear any stale redirect state from storage
+                    try {
+                        localStorage.removeItem('firebase_auth_pending_redirect');
+                        sessionStorage.removeItem('firebase_auth_pending_redirect');
+                        // Clear Firebase's internal redirect state
+                        sessionStorage.removeItem('firebase:pendingRedirect');
+                        localStorage.removeItem('firebase:pendingRedirect');
+                    } catch(e) {}
+                    
+                    console.log('Safari: Cleaned OAuth URL params to prevent redirect deadlock');
+                }
+            }
+        })();
+    </script>
 </head>
 <body>
 
@@ -180,49 +231,8 @@
             measurementId:     "G-9R2C1174BG"
         };
 
-        // ============================================================
-        // FIX #3: Clean OAuth URL parameters on page load
-        // Prevents refresh loops from stale redirect state
-        // ============================================================
-        function cleanOAuthUrlParams() {
-            const url = new URL(window.location.href);
-            const oauthParams = ['state', 'code', 'scope', 'authuser', 'prompt', 'apiKey', 'appName', 'authType', 'redirectUrl', 'v', 'eventId'];
-            let hasOAuthParams = false;
-
-            oauthParams.forEach(param => {
-                if (url.searchParams.has(param)) {
-                    url.searchParams.delete(param);
-                    hasOAuthParams = true;
-                }
-            });
-
-            if (hasOAuthParams) {
-                // Replace URL without reload to clean up
-                window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
-            }
-        }
-
-        // Clean URL immediately on script load
-        cleanOAuthUrlParams();
-
-        // ============================================================
-        // Browser Detection
-        // ============================================================
-        function isSafari() {
-            const ua = navigator.userAgent;
-            return /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
-        }
-
-        function isIOS() {
-            return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        }
-
-        const IS_SAFARI = isSafari();
-        const IS_IOS = isIOS();
-        
-        // FIX #1: Safari/iOS should NEVER use redirect flow - it's fundamentally broken due to ITP
-        const SAFARI_POPUP_ONLY = IS_SAFARI || IS_IOS;
+        // Use the pre-computed Safari detection from head script
+        const SAFARI_POPUP_ONLY = window.__SAFARI_POPUP_ONLY__ || false;
 
         // ============================================================
         // DOM References
@@ -247,7 +257,7 @@
         const REDIRECT_KEY = 'firebase_auth_pending_redirect';
 
         function setPendingRedirect() {
-            if (SAFARI_POPUP_ONLY) return; // Never set on Safari
+            if (SAFARI_POPUP_ONLY) return;
             try {
                 localStorage.setItem(REDIRECT_KEY, Date.now().toString());
             } catch (e) {
@@ -263,7 +273,6 @@
         }
 
         function hasPendingRedirect() {
-            // FIX #1: Safari should never be in a redirect state
             if (SAFARI_POPUP_ONLY) {
                 clearPendingRedirect();
                 return false;
@@ -366,21 +375,31 @@
         }
 
         // ============================================================
-        // FIX #4: Initialize Firebase Auth with persistence BEFORE getAuth
-        // Using initializeAuth() instead of getAuth() allows setting
-        // persistence at initialization time, preventing race conditions
+        // Firebase Initialization
+        // CRITICAL: Safari does NOT get popupRedirectResolver to prevent
+        // Firebase from auto-processing any stale redirect state
         // ============================================================
         let auth, provider;
 
         try {
             const app = initializeApp(firebaseConfig);
 
-            // FIX #4: Use initializeAuth with persistence set at creation time
-            // This prevents race conditions with late persistence initialization
-            auth = initializeAuth(app, {
-                persistence: [indexedDBLocalPersistence, browserLocalPersistence],
-                popupRedirectResolver: browserPopupRedirectResolver
-            });
+            if (SAFARI_POPUP_ONLY) {
+                // Safari/iOS: Initialize WITHOUT popupRedirectResolver
+                // This prevents Firebase from auto-processing redirect results
+                // which would fail with auth/missing-initial-state
+                auth = initializeAuth(app, {
+                    persistence: [indexedDBLocalPersistence, browserLocalPersistence]
+                    // NO popupRedirectResolver - Safari will ONLY use popup
+                });
+                console.log('Safari: Initialized auth without redirect resolver');
+            } else {
+                // Chrome/Firefox/Edge: Full initialization with redirect support
+                auth = initializeAuth(app, {
+                    persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+                    popupRedirectResolver: browserPopupRedirectResolver
+                });
+            }
 
             provider = new GoogleAuthProvider();
             provider.addScope('profile');
@@ -389,24 +408,37 @@
                 prompt: 'select_account'
             });
         } catch (initErr) {
-            showError('Failed to initialise authentication. Please refresh and try again.');
-            console.error('Firebase init error:', initErr);
-            throw initErr;
+            // Handle the case where auth was already initialized (e.g., hot reload)
+            if (initErr.code === 'auth/already-initialized') {
+                console.warn('Auth already initialized, using existing instance');
+                // Try to get the existing auth instance
+                import("https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js")
+                    .then(module => {
+                        auth = module.getAuth();
+                        provider = new GoogleAuthProvider();
+                        provider.addScope('profile');
+                        provider.addScope('email');
+                    });
+            } else {
+                showError('Failed to initialise authentication. Please refresh and try again.');
+                console.error('Firebase init error:', initErr);
+                throw initErr;
+            }
         }
 
         // ============================================================
         // Sign-In Function
-        // FIX #1: Safari uses ONLY popup flow (redirect is broken due to ITP)
-        // FIX #5: Pass browserPopupRedirectResolver to signInWithPopup
+        // Safari/iOS: ONLY popup (redirect is fundamentally broken)
         // ============================================================
         async function signInWithGoogle() {
             clearMessages();
             setLoading(loginBtn, true);
 
             if (SAFARI_POPUP_ONLY) {
-                // Safari/iOS: ONLY use popup - redirect is fundamentally broken due to ITP
+                // Safari/iOS: ONLY use popup
+                // We must pass browserPopupRedirectResolver here for the popup to work
+                // even though we didn't include it in initializeAuth
                 try {
-                    // FIX #5: Pass the browserPopupRedirectResolver explicitly
                     await signInWithPopup(auth, provider, browserPopupRedirectResolver);
                     // Success - onAuthStateChanged handles UI
                     return;
@@ -417,24 +449,28 @@
                         popupError.code === 'auth/cancelled-popup-request') {
                         statusMsg.textContent = 'Sign-in cancelled. Please try again.';
                     } else if (popupError.code === 'auth/popup-blocked') {
-                        // Safari blocked the popup - user must allow popups
-                        showError('Popup was blocked. Please allow popups for this site in Safari settings (Settings → Safari → Block Pop-ups → OFF), then try again.');
+                        showError('Popup was blocked. Please allow popups for this site:\n\nSafari → Settings → Websites → Pop-up Windows → Allow for this site\n\nThen try again.');
                     } else if (popupError.code === 'auth/network-request-failed' || !navigator.onLine) {
                         showError('Network error. Please check your internet connection.');
                     } else if (popupError.code === 'auth/unauthorized-domain') {
                         showError('This domain is not authorized for sign-in. Please contact support.');
+                    } else if (popupError.code === 'auth/missing-initial-state') {
+                        // This shouldn't happen anymore, but handle it gracefully
+                        showError('Browser security settings blocked sign-in. Please try again.');
+                        // Clear any stale state
+                        try {
+                            sessionStorage.clear();
+                        } catch(e) {}
                     } else {
-                        // For Safari, do NOT fall back to redirect - it will deadlock
-                        showError('Sign-in failed. Please ensure popups are allowed for this site, then try again.');
+                        showError('Sign-in failed. Please ensure popups are allowed, then try again.');
                     }
                     setLoading(loginBtn, false);
                     return;
                 }
             }
 
-            // Chrome / Firefox / Edge: Try popup first, fall back to redirect if blocked
+            // Chrome / Firefox / Edge: Try popup first, fall back to redirect
             try {
-                // FIX #5: Pass the browserPopupRedirectResolver explicitly
                 await signInWithPopup(auth, provider, browserPopupRedirectResolver);
                 // Success - onAuthStateChanged handles UI
             } catch (error) {
@@ -443,13 +479,12 @@
                     statusMsg.textContent = 'Sign-in cancelled. Please try again.';
                     setLoading(loginBtn, false);
                 } else if (error.code === 'auth/popup-blocked') {
-                    // Popup blocked on non-Safari: fall back to redirect (this works on Chrome/Firefox)
+                    // Popup blocked: fall back to redirect (works on Chrome/Firefox)
                     showInfo('Popup was blocked. Redirecting you to Google sign-in...');
                     setPendingRedirect();
                     try {
                         await new Promise(resolve => setTimeout(resolve, 800));
                         await signInWithRedirect(auth, provider, browserPopupRedirectResolver);
-                        // Page navigates away
                     } catch (redirectError) {
                         clearPendingRedirect();
                         showError('Sign-in failed. Please allow popups and try again.');
@@ -468,20 +503,17 @@
         }
 
         // ============================================================
-        // Handle Redirect Result (only relevant for non-Safari browsers)
-        // FIX #2: Always call showLoginUI() when redirect fails
-        // FIX #6: Fix timeout guard logic
-        // FIX #7: Handle auth/missing-initial-state error specifically
+        // Handle Redirect Result (non-Safari browsers only)
         // ============================================================
         async function handleRedirectResult() {
-            const hadPendingRedirect = hasPendingRedirect();
-
-            // FIX #1: Safari should skip redirect handling entirely
+            // Safari should NEVER process redirect results
             if (SAFARI_POPUP_ONLY) {
                 clearPendingRedirect();
                 redirectOverlay.classList.add('hidden');
                 return false;
             }
+
+            const hadPendingRedirect = hasPendingRedirect();
 
             if (hadPendingRedirect) {
                 redirectOverlay.classList.remove('hidden');
@@ -494,29 +526,22 @@
                 if (result && result.user) {
                     clearPendingRedirect();
                     redirectOverlay.classList.add('hidden');
-                    // onAuthStateChanged will handle showing the user UI
                     return true;
                 }
 
-                // No result but we had a pending redirect
                 if (hadPendingRedirect) {
                     clearPendingRedirect();
                     redirectOverlay.classList.add('hidden');
-                    // FIX #2: Always show login UI when redirect completes without user
                     showLoginUI();
-                    // FIX #6: Show helpful message (login section is now visible)
                     showInfo('Sign-in did not complete. Please try again.');
                 }
             } catch (error) {
                 clearPendingRedirect();
                 redirectOverlay.classList.add('hidden');
-                
-                // FIX #2: ALWAYS show login UI on error so user can retry
                 showLoginUI();
 
-                // FIX #7: Handle auth/missing-initial-state specifically (Safari ITP signature error)
                 if (error.code === 'auth/missing-initial-state') {
-                    showError('Sign-in was blocked by browser privacy settings. Please try again using the popup method.');
+                    showError('Sign-in was blocked by browser privacy settings. Please try again.');
                     console.error('ITP blocked redirect:', error);
                 } else if (error.code === 'auth/network-request-failed') {
                     showError('Network error during sign-in. Please check your connection.');
@@ -541,7 +566,6 @@
             setLoading(logoutBtn, true);
             try {
                 await signOut(auth);
-                // onAuthStateChanged handles UI
             } catch (error) {
                 showError('Sign-out failed. Please check your connection and try again.');
                 console.error('Logout error:', error);
@@ -561,15 +585,12 @@
                 }
             }, 8000);
 
-            // Set up auth state listener
             onAuthStateChanged(auth, (user) => {
                 clearTimeout(initTimeout);
 
                 if (user) {
                     showUserUI(user);
                 } else {
-                    // FIX #2: Don't check hasPendingRedirect here for Safari
-                    // On Safari, always show login UI immediately
                     if (SAFARI_POPUP_ONLY || !hasPendingRedirect()) {
                         showLoginUI();
                     }
@@ -583,8 +604,10 @@
                 console.error('Auth state error:', error);
             });
 
-            // Handle any pending redirect result (non-Safari only)
-            await handleRedirectResult();
+            // Handle redirect result (non-Safari only)
+            if (!SAFARI_POPUP_ONLY) {
+                await handleRedirectResult();
+            }
         }
 
         // Start the app
