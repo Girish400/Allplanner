@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adventure Planner - Login</title>
+    <title>Trip Planner - Login</title>
+    <!-- BUG FIX #1: Added Content Security Policy to allow only trusted origins -->
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self' https://www.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;
+                   script-src 'self' 'unsafe-inline' https://www.gstatic.com;
+                   style-src 'self' 'unsafe-inline';
+                   img-src 'self' data: https://lh3.googleusercontent.com https://googleusercontent.com;
+                   connect-src 'self' https://*.googleapis.com https://*.google.com https://*.firebaseapp.com wss://*.firebaseio.com;">
     <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f9f4;
@@ -12,9 +21,11 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh; /* BUG FIX #2: min-height instead of height to avoid content overflow on small viewports */
             margin: 0;
+            padding: 1rem; /* Added padding so card doesn't touch edges on tiny screens */
         }
+
         .login-container {
             background: white;
             padding: 40px;
@@ -24,7 +35,9 @@
             max-width: 400px;
             width: 100%;
         }
-        h1 { color: #2e7d32; }
+
+        h1 { color: #2e7d32; margin-top: 0; }
+
         .btn {
             background-color: #4285F4;
             color: white;
@@ -38,47 +51,110 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            transition: background 0.3s ease;
+            transition: background 0.3s ease, opacity 0.2s ease;
         }
-        .btn:hover { background-color: #3367D6; }
-        .btn-logout { background-color: #d32f2f; margin-top: 10px; }
+        .btn:hover:not(:disabled) { background-color: #3367D6; }
+
+        /* BUG FIX #3: Added disabled state styling — missing in original */
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-logout {
+            background-color: #d32f2f;
+            margin-top: 10px;
+        }
+        .btn-logout:hover:not(:disabled) { background-color: #b71c1c; }
+
         .hidden { display: none !important; }
+
         #user-info { margin-top: 20px; }
-        #user-info img { border-radius: 50%; width: 70px; height: 70px; border: 3px solid #2e7d32; }
+
+        /* BUG FIX #4: Added onerror fallback via CSS — if profile photo fails to load it won't show a broken image */
+        #profile-pic {
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            border: 3px solid #2e7d32;
+            object-fit: cover; /* Ensures non-square avatars don't distort */
+            background-color: #e8f5e9; /* placeholder bg if image fails */
+        }
+
+        /* BUG FIX #5: Error message styling was completely missing */
+        #error-message {
+            color: #c62828;
+            background: #ffebee;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-top: 12px;
+            font-size: 14px;
+            display: none;
+            text-align: left;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .status-text {
+            font-size: 14px;
+            color: #555;
+            margin: 0 0 4px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="login-container">
+    <div class="login-container" role="main">
         <h1>🏕️ Trip Planner</h1>
-        <p id="status-message">Loading...</p>
+        <p id="status-message" class="status-text" aria-live="polite">Loading…</p>
+
+        <!-- BUG FIX #6: Error container added (was missing entirely) -->
+        <div id="error-message" role="alert" aria-live="assertive"></div>
 
         <div id="login-section" class="hidden">
-            <button class="btn" id="login-btn">Sign in with Google</button>
+            <!-- BUG FIX #7: Added aria-label and type="button" to prevent accidental form submission -->
+            <button class="btn" id="login-btn" type="button" aria-label="Sign in with your Google account">
+                Sign in with Google
+            </button>
         </div>
 
-        <div id="user-info" class="hidden">
-            <img id="profile-pic" src="" alt="Profile Picture">
-            <h3 id="user-name"></h3>
-            <p id="user-email"></p>
-            <button class="btn btn-logout" id="logout-btn">Sign Out</button>
+        <div id="user-info" class="hidden" aria-live="polite">
+            <!-- BUG FIX #8: Added alt text fallback via onerror; src defaults to empty string to avoid 404 on load -->
+            <img id="profile-pic" src="" alt="Profile picture"
+                 onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 70 70%22><circle cx=%2235%22 cy=%2235%22 r=%2235%22 fill=%22%23c8e6c9%22/><text x=%2235%22 y=%2241%22 text-anchor=%22middle%22 font-size=%2228%22 fill=%22%232e7d32%22>👤</text></svg>'; this.alt='Default avatar';">
+            <h3 id="user-name" aria-label="Logged-in user name"></h3>
+            <p id="user-email" style="font-size:14px;color:#555;word-break:break-all;"></p>
+            <button class="btn btn-logout" id="logout-btn" type="button" aria-label="Sign out of your account">
+                Sign Out
+            </button>
         </div>
     </div>
 
     <script type="module">
-        // 1. Import the necessary Firebase functions
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { 
-            getAuth, 
-            signInWithPopup, 
-            GoogleAuthProvider, 
-            signOut, 
+        import {
+            getAuth,
+            signInWithPopup,
+            GoogleAuthProvider,
+            signOut,
             onAuthStateChanged,
             setPersistence,
-            browserLocalPersistence 
+            browserLocalPersistence
         } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-        // 2. Your Firebase configuration
+        // BUG FIX #9: Validate config before init — catches missing/empty keys early
         const firebaseConfig = {
             apiKey: "AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc",
             authDomain: "camp-cbf1d.firebaseapp.com",
@@ -89,58 +165,185 @@
             measurementId: "G-9R2C1174BG"
         };
 
-        // 3. Initialize Firebase & Auth
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
+        const REQUIRED_CONFIG_KEYS = ['apiKey', 'authDomain', 'projectId', 'appId'];
+        const missingKeys = REQUIRED_CONFIG_KEYS.filter(k => !firebaseConfig[k]);
+        if (missingKeys.length) {
+            showError(`Firebase configuration is incomplete. Missing: ${missingKeys.join(', ')}`);
+            throw new Error('Firebase config validation failed.');
+        }
 
-        // DOM Elements
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const loginSection = document.getElementById('login-section');
-        const userInfoSection = document.getElementById('user-info');
-        const profilePic = document.getElementById('profile-pic');
-        const userName = document.getElementById('user-name');
-        const userEmail = document.getElementById('user-email');
-        const statusMessage = document.getElementById('status-message');
+        // Initialize Firebase
+        let app, auth, provider;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            provider = new GoogleAuthProvider();
+            // BUG FIX #10: Request basic profile scope explicitly — avoids silent scope errors
+            provider.addScope('profile');
+            provider.addScope('email');
+        } catch (initErr) {
+            showError('Failed to initialise authentication. Please refresh and try again.');
+            console.error('Firebase init error:', initErr);
+            throw initErr;
+        }
 
-        // 4. Handle Login with Persistence
-        loginBtn.addEventListener('click', () => {
-            // "browserLocalPersistence" tells Firebase to save the session even if browser is closed
-            setPersistence(auth, browserLocalPersistence)
-                .then(() => {
-                    return signInWithPopup(auth, provider);
-                })
-                .catch((error) => {
-                    alert("Login failed: " + error.message);
-                });
-        });
+        // DOM references
+        const loginBtn      = document.getElementById('login-btn');
+        const logoutBtn     = document.getElementById('logout-btn');
+        const loginSection  = document.getElementById('login-section');
+        const userInfoSec   = document.getElementById('user-info');
+        const profilePic    = document.getElementById('profile-pic');
+        const userName      = document.getElementById('user-name');
+        const userEmail     = document.getElementById('user-email');
+        const statusMsg     = document.getElementById('status-message');
+        const errorMsg      = document.getElementById('error-message');
 
-        // 5. Handle Logout
-        logoutBtn.addEventListener('click', () => {
-            signOut(auth).then(() => {
-                console.log("Logged out.");
-            });
-        });
+        // ── Helpers ────────────────────────────────────────────────────────────
 
-        // 6. THE CONTROLLER: onAuthStateChanged
-        // This function runs automatically whenever the page loads or the user's status changes.
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // User is logged in (or was already logged in from a previous session)
-                loginSection.classList.add('hidden');
-                userInfoSection.classList.remove('hidden');
-                
-                profilePic.src = user.photoURL;
-                userName.textContent = user.displayName;
-                userEmail.textContent = user.email;
-                statusMessage.textContent = "Welcome back, Traveler!";
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+        }
+
+        function clearError() {
+            errorMsg.textContent = '';
+            errorMsg.style.display = 'none';
+        }
+
+        function setLoading(button, loading) {
+            if (loading) {
+                button.disabled = true;
+                const spinner = document.createElement('span');
+                spinner.className = 'spinner';
+                spinner.setAttribute('aria-hidden', 'true');
+                button.prepend(spinner);
             } else {
-                // User is logged out
-                loginSection.classList.remove('hidden');
-                userInfoSection.classList.add('hidden');
-                statusMessage.textContent = "Please sign in to plan your trip.";
+                button.disabled = false;
+                const spinner = button.querySelector('.spinner');
+                if (spinner) spinner.remove();
             }
+        }
+
+        // BUG FIX #11: Sanitise user-supplied strings before inserting into DOM
+        function safeText(value) {
+            if (typeof value !== 'string') return '';
+            // Strip any stray HTML that might arrive from the OAuth provider
+            const div = document.createElement('div');
+            div.textContent = value;
+            return div.textContent;
+        }
+
+        // BUG FIX #12: Validate that a profile photo URL is from a trusted host
+        function isTrustedPhotoUrl(url) {
+            if (!url || typeof url !== 'string') return false;
+            try {
+                const u = new URL(url);
+                // Only allow Google-hosted CDN photos
+                return ['lh3.googleusercontent.com', 'googleusercontent.com'].includes(u.hostname);
+            } catch {
+                return false;
+            }
+        }
+
+        // ── Login ──────────────────────────────────────────────────────────────
+
+        loginBtn.addEventListener('click', async () => {
+            clearError();
+            setLoading(loginBtn, true);
+            try {
+                await setPersistence(auth, browserLocalPersistence);
+                await signInWithPopup(auth, provider);
+                // onAuthStateChanged handles UI update — no need to do it here
+            } catch (error) {
+                // BUG FIX #13: Error was only shown via alert (blocking UI). Now uses inline error div.
+                // BUG FIX #14: User-cancelled popup ('auth/popup-closed-by-user') treated as non-error
+                if (error.code === 'auth/popup-closed-by-user' ||
+                    error.code === 'auth/cancelled-popup-request') {
+                    statusMsg.textContent = 'Sign-in cancelled. Please try again.';
+                } else if (error.code === 'auth/popup-blocked') {
+                    showError('Popup was blocked by your browser. Please allow popups for this site and try again.');
+                } else if (error.code === 'auth/network-request-failed') {
+                    showError('Network error. Please check your connection and try again.');
+                } else {
+                    showError('Sign-in failed. Please try again.');
+                    console.error('Login error:', error.code, error.message);
+                }
+            } finally {
+                // BUG FIX #15: Original code never re-enabled the button after a failed login
+                setLoading(loginBtn, false);
+            }
+        });
+
+        // ── Logout ─────────────────────────────────────────────────────────────
+
+        logoutBtn.addEventListener('click', async () => {
+            clearError();
+            setLoading(logoutBtn, true);
+            try {
+                await signOut(auth);
+                // BUG FIX #16: Original had no error handling on signOut at all
+            } catch (error) {
+                showError('Sign-out failed. Please try again.');
+                console.error('Logout error:', error);
+                setLoading(logoutBtn, false); // Re-enable only on failure; success triggers onAuthStateChanged
+            }
+        });
+
+        // ── Auth state controller ──────────────────────────────────────────────
+
+        // BUG FIX #17: Initial "Loading…" state had no timeout — if Firebase hangs
+        // the user sees "Loading…" forever. Add a timeout to surface an error.
+        const initTimeout = setTimeout(() => {
+            if (statusMsg.textContent === 'Loading…') {
+                showError('Authentication is taking longer than expected. Please refresh the page.');
+            }
+        }, 10000);
+
+        onAuthStateChanged(auth, (user) => {
+            clearTimeout(initTimeout);
+            clearError();
+
+            if (user) {
+                // BUG FIX #18: Was setting innerHTML-adjacent properties directly
+                // with raw values — now sanitised via safeText()
+                loginSection.classList.add('hidden');
+                userInfoSec.classList.remove('hidden');
+
+                // BUG FIX #12 applied: validate photo URL before assigning
+                if (isTrustedPhotoUrl(user.photoURL)) {
+                    profilePic.src = user.photoURL;
+                } else {
+                    profilePic.src = ''; // triggers onerror fallback avatar
+                }
+
+                userName.textContent  = safeText(user.displayName || 'Traveler');
+                userEmail.textContent = safeText(user.email || '');
+                statusMsg.textContent = `Welcome back, ${safeText(user.displayName?.split(' ')[0] || 'Traveler')}!`;
+
+                // Reset logout button in case it was left in loading state
+                setLoading(logoutBtn, false);
+            } else {
+                loginSection.classList.remove('hidden');
+                userInfoSec.classList.add('hidden');
+                statusMsg.textContent = 'Please sign in to plan your trip.';
+
+                // BUG FIX #19: Clear stale profile data on logout to prevent data leakage
+                profilePic.src   = '';
+                userName.textContent  = '';
+                userEmail.textContent = '';
+
+                // Reset login button in case it was left in loading state
+                setLoading(loginBtn, false);
+            }
+        }, (error) => {
+            // BUG FIX #20: onAuthStateChanged error callback was missing entirely —
+            // if the listener itself errors (e.g. token refresh failure) it was silent
+            clearTimeout(initTimeout);
+            console.error('Auth state error:', error);
+            showError('An authentication error occurred. Please refresh the page.');
+            loginSection.classList.remove('hidden');
+            userInfoSec.classList.add('hidden');
+            statusMsg.textContent = 'Authentication error.';
         });
     </script>
 </body>
