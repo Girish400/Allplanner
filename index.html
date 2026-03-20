@@ -148,7 +148,7 @@
             browserLocalPersistence
         } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-        // BUG FIX #9: Validate config before init — catches missing/empty keys early
+        // Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc",
             authDomain: "camp-cbf1d.firebaseapp.com",
@@ -159,6 +159,26 @@
             measurementId: "G-9R2C1174BG"
         };
 
+        // DOM references — declared first so showError() and all helpers can use them
+        const loginBtn      = document.getElementById('login-btn');
+        const logoutBtn     = document.getElementById('logout-btn');
+        const loginSection  = document.getElementById('login-section');
+        const userInfoSec   = document.getElementById('user-info');
+        const profilePic    = document.getElementById('profile-pic');
+        const userName      = document.getElementById('user-name');
+        const userEmail     = document.getElementById('user-email');
+        const statusMsg     = document.getElementById('status-message');
+        const errorMsg      = document.getElementById('error-message');
+
+        // ── Helpers ────────────────────────────────────────────────────────────
+
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+        }
+
+        // BUG FIX #9 (corrected order): Config validation runs AFTER DOM refs are ready
+        // so showError() can safely render the message in the page
         const REQUIRED_CONFIG_KEYS = ['apiKey', 'authDomain', 'projectId', 'appId'];
         const missingKeys = REQUIRED_CONFIG_KEYS.filter(k => !firebaseConfig[k]);
         if (missingKeys.length) {
@@ -179,24 +199,6 @@
             showError('Failed to initialise authentication. Please refresh and try again.');
             console.error('Firebase init error:', initErr);
             throw initErr;
-        }
-
-        // DOM references
-        const loginBtn      = document.getElementById('login-btn');
-        const logoutBtn     = document.getElementById('logout-btn');
-        const loginSection  = document.getElementById('login-section');
-        const userInfoSec   = document.getElementById('user-info');
-        const profilePic    = document.getElementById('profile-pic');
-        const userName      = document.getElementById('user-name');
-        const userEmail     = document.getElementById('user-email');
-        const statusMsg     = document.getElementById('status-message');
-        const errorMsg      = document.getElementById('error-message');
-
-        // ── Helpers ────────────────────────────────────────────────────────────
-
-        function showError(message) {
-            errorMsg.textContent = message;
-            errorMsg.style.display = 'block';
         }
 
         function clearError() {
