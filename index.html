@@ -160,7 +160,6 @@
         import {
             getAuth,
             signInWithPopup,
-            signInWithRedirect,
             getRedirectResult,
             GoogleAuthProvider,
             signOut,
@@ -193,15 +192,6 @@
         const redirectOverlay = document.getElementById('redirect-overlay');
 
         const DEFAULT_AVATAR = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 70 70%22><circle cx=%2235%22 cy=%2235%22 r=%2235%22 fill=%22%23c8e6c9%22/><text x=%2235%22 y=%2241%22 text-anchor=%22middle%22 font-size=%2228%22 fill=%22%232e7d32%22>&#128100;</text></svg>';
-
-        // Detect Safari (desktop + iOS).
-        // Safari includes "Safari" in UA but NOT "Chrome", "CriOS" (Chrome iOS),
-        // "FxiOS" (Firefox iOS) or "Android".
-        function isSafari() {
-            return /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
-        }
-
-        const USE_REDIRECT = isSafari();
 
         // Helpers
         function showError(msg) {
@@ -244,7 +234,7 @@
             if (!url || typeof url !== 'string') return false;
             try {
                 const u = new URL(url);
-                return ['lh3.googleusercontent.com', 'googleusercontent.com'].includes(u.hostname);
+                return['lh3.googleusercontent.com', 'googleusercontent.com'].includes(u.hostname);
             } catch { return false; }
         }
 
@@ -284,8 +274,7 @@
             throw initErr;
         }
 
-        // Handle redirect result — must run on every page load to catch the
-        // result after Safari navigates back from Google's sign-in page.
+        // Handle redirect result (Left for backwards compatibility in case a user arrives from an older session state)
         (async () => {
             try {
                 if (sessionStorage.getItem('pendingRedirect') === 'true') {
@@ -293,12 +282,11 @@
                     statusMsg.textContent = 'Completing sign-in...';
                 }
                 await setPersistence(auth, browserLocalPersistence);
-                const result = await getRedirectResult(auth);
-                if (result && result.user) {
-                    sessionStorage.removeItem('pendingRedirect');
-                    redirectOverlay.classList.add('hidden');
-                    // onAuthStateChanged fires next and calls showUserUI()
-                }
+                await getRedirectResult(auth);
+                
+                // Unconditionally clear the overlay so we don't get stuck if ITP blocked the payload
+                sessionStorage.removeItem('pendingRedirect');
+                redirectOverlay.classList.add('hidden');
             } catch (error) {
                 sessionStorage.removeItem('pendingRedirect');
                 redirectOverlay.classList.add('hidden');
@@ -318,16 +306,9 @@
             setLoading(loginBtn, true);
 
             try {
-                if (USE_REDIRECT) {
-                    // Safari: redirect to Google — page navigates away
-                    sessionStorage.setItem('pendingRedirect', 'true');
-                    await signInWithRedirect(auth, provider);
-                    // Nothing after this runs — browser leaves the page
-                } else {
-                    // Chrome / Firefox / Edge: faster popup flow
-                    await signInWithPopup(auth, provider);
-                    // onAuthStateChanged handles UI
-                }
+                // Firebase popup flows are the recommended approach as they inherently bypass ITP
+                // because the authentication process occurs within a first-party window context
+                await signInWithPopup(auth, provider);
             } catch (error) {
                 sessionStorage.removeItem('pendingRedirect');
 
@@ -335,11 +316,8 @@
                     error.code === 'auth/cancelled-popup-request') {
                     statusMsg.textContent = 'Sign-in cancelled. Please try again.';
                 } else if (error.code === 'auth/popup-blocked') {
-                    // Popup blocked even on non-Safari: auto-fallback to redirect
-                    showInfo('Popup was blocked. Redirecting you to Google sign-in...');
-                    sessionStorage.setItem('pendingRedirect', 'true');
-                    setTimeout(() => signInWithRedirect(auth, provider), 1200);
-                    return; // Do NOT call setLoading(false) — page is about to navigate
+                    // Show message rather than relying on a fallback Redirect which fails on Safari
+                    showError('Popup was blocked. Please allow popups for this site and try again.');
                 } else if (error.code === 'auth/network-request-failed' || !navigator.onLine) {
                     showError('Network error. Please check your internet connection.');
                 } else {
@@ -357,7 +335,6 @@
             setLoading(logoutBtn, true);
             try {
                 await signOut(auth);
-                // onAuthStateChanged fires and calls showLoginUI()
             } catch (error) {
                 showError('Sign-out failed. Please check your connection and try again.');
                 console.error('Logout error:', error);
@@ -382,8 +359,6 @@
             if (user) {
                 showUserUI(user);
             } else {
-                // Don't flip to login UI if a redirect is in progress —
-                // the browser is about to leave the page
                 if (sessionStorage.getItem('pendingRedirect') !== 'true') {
                     showLoginUI();
                 }
