@@ -47,14 +47,13 @@
             width: 100%;
             transition: background 0.3s ease, opacity 0.2s ease;
         }
-        
+
         .btn:hover:not(:disabled) { background-color: #3367D6; }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .btn-logout { background-color: #d32f2f; margin-top: 10px; }
         .btn-logout:hover:not(:disabled) { background-color: #b71c1c; }
 
-        /* Unified hidden class for all state toggles */
         .hidden { display: none !important; }
 
         #user-info { margin-top: 20px; }
@@ -78,6 +77,16 @@
             text-align: left;
         }
 
+        #info-message {
+            color: #1565c0;
+            background: #e3f2fd;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-top: 12px;
+            font-size: 14px;
+            text-align: left;
+        }
+
         .spinner {
             display: inline-block;
             width: 18px;
@@ -91,16 +100,44 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        #redirect-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(244, 249, 244, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            font-size: 15px;
+            color: #2c3e50;
+            z-index: 100;
+        }
+        #redirect-overlay .big-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #c8e6c9;
+            border-top-color: #2e7d32;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
         .status-text { font-size: 14px; color: #555; margin: 0 0 4px; }
     </style>
 </head>
 <body>
 
+    <div id="redirect-overlay" class="hidden" aria-live="polite" aria-label="Completing sign-in">
+        <div class="big-spinner"></div>
+        <span>Completing sign-in&hellip;</span>
+    </div>
+
     <div class="login-container" role="main">
-        <h1>🏕️ Trip Planner</h1>
-        <p id="status-message" class="status-text" aria-live="polite">Loading…</p>
+        <h1>&#127957;&#65039; Trip Planner</h1>
+        <p id="status-message" class="status-text" aria-live="polite">Loading&hellip;</p>
 
         <div id="error-message" class="hidden" role="alert" aria-live="assertive"></div>
+        <div id="info-message"  class="hidden" aria-live="polite"></div>
 
         <div id="login-section" class="hidden">
             <button class="btn" id="login-btn" type="button" aria-label="Sign in with your Google account">
@@ -121,36 +158,56 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import {
-            getAuth, signInWithPopup, GoogleAuthProvider, signOut,
-            onAuthStateChanged, setPersistence, browserLocalPersistence
+            getAuth,
+            signInWithPopup,
+            signInWithRedirect,
+            getRedirectResult,
+            GoogleAuthProvider,
+            signOut,
+            onAuthStateChanged,
+            setPersistence,
+            browserLocalPersistence
         } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc",
-            authDomain: "camp-cbf1d.firebaseapp.com",
-            projectId: "camp-cbf1d",
-            storageBucket: "camp-cbf1d.firebasestorage.app",
+            apiKey:            "AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc",
+            authDomain:        "camp-cbf1d.firebaseapp.com",
+            projectId:         "camp-cbf1d",
+            storageBucket:     "camp-cbf1d.firebasestorage.app",
             messagingSenderId: "879899618290",
-            appId: "1:879899618290:web:c71c1626e5a5fa0a96596b",
-            measurementId: "G-9R2C1174BG"
+            appId:             "1:879899618290:web:c71c1626e5a5fa0a96596b",
+            measurementId:     "G-9R2C1174BG"
         };
 
-        const loginBtn      = document.getElementById('login-btn');
-        const logoutBtn     = document.getElementById('logout-btn');
-        const loginSection  = document.getElementById('login-section');
-        const userInfoSec   = document.getElementById('user-info');
-        const profilePic    = document.getElementById('profile-pic');
-        const userName      = document.getElementById('user-name');
-        const userEmail     = document.getElementById('user-email');
-        const statusMsg     = document.getElementById('status-message');
-        const errorMsg      = document.getElementById('error-message');
+        // DOM refs
+        const loginBtn        = document.getElementById('login-btn');
+        const logoutBtn       = document.getElementById('logout-btn');
+        const loginSection    = document.getElementById('login-section');
+        const userInfoSec     = document.getElementById('user-info');
+        const profilePic      = document.getElementById('profile-pic');
+        const userName        = document.getElementById('user-name');
+        const userEmail       = document.getElementById('user-email');
+        const statusMsg       = document.getElementById('status-message');
+        const errorMsg        = document.getElementById('error-message');
+        const infoMsg         = document.getElementById('info-message');
+        const redirectOverlay = document.getElementById('redirect-overlay');
 
-        const DEFAULT_AVATAR = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 70 70%22><circle cx=%2235%22 cy=%2235%22 r=%2235%22 fill=%22%23c8e6c9%22/><text x=%2235%22 y=%2241%22 text-anchor=%22middle%22 font-size=%2228%22 fill=%22%232e7d32%22>👤</text></svg>';
+        const DEFAULT_AVATAR = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 70 70%22><circle cx=%2235%22 cy=%2235%22 r=%2235%22 fill=%22%23c8e6c9%22/><text x=%2235%22 y=%2241%22 text-anchor=%22middle%22 font-size=%2228%22 fill=%22%232e7d32%22>&#128100;</text></svg>';
 
-        // ── Helpers ────────────────────────────────────────────────────────────
-        function showError(message) {
-            errorMsg.textContent = message;
+        // Detect Safari (desktop + iOS).
+        // Safari includes "Safari" in UA but NOT "Chrome", "CriOS" (Chrome iOS),
+        // "FxiOS" (Firefox iOS) or "Android".
+        function isSafari() {
+            return /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+        }
+
+        const USE_REDIRECT = isSafari();
+
+        // Helpers
+        function showError(msg) {
+            errorMsg.textContent = msg;
             errorMsg.classList.remove('hidden');
+            infoMsg.classList.add('hidden');
         }
 
         function clearError() {
@@ -158,17 +215,28 @@
             errorMsg.classList.add('hidden');
         }
 
+        function showInfo(msg) {
+            infoMsg.textContent = msg;
+            infoMsg.classList.remove('hidden');
+            errorMsg.classList.add('hidden');
+        }
+
+        function clearInfo() {
+            infoMsg.textContent = '';
+            infoMsg.classList.add('hidden');
+        }
+
         function setLoading(button, loading) {
             if (loading) {
                 button.disabled = true;
-                const spinner = document.createElement('span');
-                spinner.className = 'spinner';
-                spinner.setAttribute('aria-hidden', 'true');
-                button.prepend(spinner);
+                const s = document.createElement('span');
+                s.className = 'spinner';
+                s.setAttribute('aria-hidden', 'true');
+                button.prepend(s);
             } else {
                 button.disabled = false;
-                const spinner = button.querySelector('.spinner');
-                if (spinner) spinner.remove();
+                const s = button.querySelector('.spinner');
+                if (s) s.remove();
             }
         }
 
@@ -177,52 +245,119 @@
             try {
                 const u = new URL(url);
                 return ['lh3.googleusercontent.com', 'googleusercontent.com'].includes(u.hostname);
-            } catch {
-                return false;
-            }
+            } catch { return false; }
         }
 
-        // ── Init ───────────────────────────────────────────────────────────────
-        let app, auth, provider;
+        function showUserUI(user) {
+            loginSection.classList.add('hidden');
+            userInfoSec.classList.remove('hidden');
+            redirectOverlay.classList.add('hidden');
+            profilePic.src        = isTrustedPhotoUrl(user.photoURL) ? user.photoURL : DEFAULT_AVATAR;
+            userName.textContent  = user.displayName || 'Traveler';
+            userEmail.textContent = user.email || '';
+            statusMsg.textContent = 'Welcome back, ' + (user.displayName || 'Traveler').split(' ')[0] + '!';
+            setLoading(logoutBtn, false);
+        }
+
+        function showLoginUI() {
+            loginSection.classList.remove('hidden');
+            userInfoSec.classList.add('hidden');
+            redirectOverlay.classList.add('hidden');
+            statusMsg.textContent = 'Please sign in to plan your trip.';
+            profilePic.src        = '';
+            userName.textContent  = '';
+            userEmail.textContent = '';
+            setLoading(loginBtn, false);
+        }
+
+        // Firebase init
+        let auth, provider;
         try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            provider = new GoogleAuthProvider();
+            const app = initializeApp(firebaseConfig);
+            auth      = getAuth(app);
+            provider  = new GoogleAuthProvider();
             provider.addScope('profile');
             provider.addScope('email');
         } catch (initErr) {
             showError('Failed to initialise authentication. Please refresh and try again.');
+            console.error('Firebase init error:', initErr);
             throw initErr;
         }
 
-        // ── Login / Logout ─────────────────────────────────────────────────────
+        // Handle redirect result — must run on every page load to catch the
+        // result after Safari navigates back from Google's sign-in page.
+        (async () => {
+            try {
+                if (sessionStorage.getItem('pendingRedirect') === 'true') {
+                    redirectOverlay.classList.remove('hidden');
+                    statusMsg.textContent = 'Completing sign-in...';
+                }
+                await setPersistence(auth, browserLocalPersistence);
+                const result = await getRedirectResult(auth);
+                if (result && result.user) {
+                    sessionStorage.removeItem('pendingRedirect');
+                    redirectOverlay.classList.add('hidden');
+                    // onAuthStateChanged fires next and calls showUserUI()
+                }
+            } catch (error) {
+                sessionStorage.removeItem('pendingRedirect');
+                redirectOverlay.classList.add('hidden');
+                if (error.code === 'auth/network-request-failed') {
+                    showError('Network error during sign-in. Please check your connection.');
+                } else if (error.code && error.code !== 'auth/no-auth-event') {
+                    showError('Sign-in was interrupted. Please try again.');
+                    console.error('Redirect result error:', error);
+                }
+            }
+        })();
+
+        // Login
         loginBtn.addEventListener('click', async () => {
             clearError();
+            clearInfo();
             setLoading(loginBtn, true);
+
             try {
-                await setPersistence(auth, browserLocalPersistence);
-                await signInWithPopup(auth, provider);
+                if (USE_REDIRECT) {
+                    // Safari: redirect to Google — page navigates away
+                    sessionStorage.setItem('pendingRedirect', 'true');
+                    await signInWithRedirect(auth, provider);
+                    // Nothing after this runs — browser leaves the page
+                } else {
+                    // Chrome / Firefox / Edge: faster popup flow
+                    await signInWithPopup(auth, provider);
+                    // onAuthStateChanged handles UI
+                }
             } catch (error) {
-                if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+                sessionStorage.removeItem('pendingRedirect');
+
+                if (error.code === 'auth/popup-closed-by-user' ||
+                    error.code === 'auth/cancelled-popup-request') {
                     statusMsg.textContent = 'Sign-in cancelled. Please try again.';
                 } else if (error.code === 'auth/popup-blocked') {
-                    showError('Popup was blocked by your browser. Please allow popups for this site and try again.');
+                    // Popup blocked even on non-Safari: auto-fallback to redirect
+                    showInfo('Popup was blocked. Redirecting you to Google sign-in...');
+                    sessionStorage.setItem('pendingRedirect', 'true');
+                    setTimeout(() => signInWithRedirect(auth, provider), 1200);
+                    return; // Do NOT call setLoading(false) — page is about to navigate
                 } else if (error.code === 'auth/network-request-failed' || !navigator.onLine) {
                     showError('Network error. Please check your internet connection.');
                 } else {
                     showError('Sign-in failed. Please try again.');
                     console.error('Login error:', error);
                 }
-            } finally {
+
                 setLoading(loginBtn, false);
             }
         });
 
+        // Logout
         logoutBtn.addEventListener('click', async () => {
             clearError();
             setLoading(logoutBtn, true);
             try {
                 await signOut(auth);
+                // onAuthStateChanged fires and calls showLoginUI()
             } catch (error) {
                 showError('Sign-out failed. Please check your connection and try again.');
                 console.error('Logout error:', error);
@@ -230,11 +365,12 @@
             }
         });
 
-        // ── Auth State ─────────────────────────────────────────────────────────
+        // Auth state listener
         const initTimeout = setTimeout(() => {
-            if (statusMsg.textContent === 'Loading…') {
+            if (statusMsg.textContent === 'Loading\u2026') {
                 showError('Authentication service is taking longer than expected. Please check your connection.');
-                loginSection.classList.remove('hidden'); // Failsafe: let them try anyway
+                loginSection.classList.remove('hidden');
+                redirectOverlay.classList.add('hidden');
                 statusMsg.textContent = 'Ready.';
             }
         }, 8000);
@@ -244,33 +380,22 @@
             clearError();
 
             if (user) {
-                loginSection.classList.add('hidden');
-                userInfoSec.classList.remove('hidden');
-
-                profilePic.src = isTrustedPhotoUrl(user.photoURL) ? user.photoURL : DEFAULT_AVATAR;
-                
-                // Using .textContent natively prevents XSS injection
-                userName.textContent  = user.displayName || 'Traveler';
-                userEmail.textContent = user.email || '';
-                statusMsg.textContent = `Welcome back, ${userName.textContent.split(' ')[0]}!`;
-
-                setLoading(logoutBtn, false);
+                showUserUI(user);
             } else {
-                loginSection.classList.remove('hidden');
-                userInfoSec.classList.add('hidden');
-                statusMsg.textContent = 'Please sign in to plan your trip.';
-
-                profilePic.src = '';
-                userName.textContent = '';
-                userEmail.textContent = '';
-
-                setLoading(loginBtn, false);
+                // Don't flip to login UI if a redirect is in progress —
+                // the browser is about to leave the page
+                if (sessionStorage.getItem('pendingRedirect') !== 'true') {
+                    showLoginUI();
+                }
             }
         }, (error) => {
             clearTimeout(initTimeout);
+            sessionStorage.removeItem('pendingRedirect');
             showError('An authentication error occurred. Please refresh the page.');
             loginSection.classList.remove('hidden');
+            redirectOverlay.classList.add('hidden');
             statusMsg.textContent = 'Service unavailable.';
+            console.error('Auth state error:', error);
         });
     </script>
 </body>
