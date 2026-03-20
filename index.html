@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adventure Planner - Login</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f9f4;
+            color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 { color: #2e7d32; }
+        .btn {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            transition: background 0.3s ease;
+        }
+        .btn:hover { background-color: #3367D6; }
+        .btn-logout { background-color: #d32f2f; margin-top: 10px; }
+        .hidden { display: none !important; }
+        #user-info { margin-top: 20px; }
+        #user-info img { border-radius: 50%; width: 70px; height: 70px; border: 3px solid #2e7d32; }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h1>🏕️ Trip Planner</h1>
+        <p id="status-message">Loading...</p>
+
+        <div id="login-section" class="hidden">
+            <button class="btn" id="login-btn">Sign in with Google</button>
+        </div>
+
+        <div id="user-info" class="hidden">
+            <img id="profile-pic" src="" alt="Profile Picture">
+            <h3 id="user-name"></h3>
+            <p id="user-email"></p>
+            <button class="btn btn-logout" id="logout-btn">Sign Out</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // 1. Import the necessary Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            signOut, 
+            onAuthStateChanged,
+            setPersistence,
+            browserLocalPersistence 
+        } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        // 2. Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc",
+            authDomain: "camp-cbf1d.firebaseapp.com",
+            projectId: "camp-cbf1d",
+            storageBucket: "camp-cbf1d.firebasestorage.app",
+            messagingSenderId: "879899618290",
+            appId: "1:879899618290:web:c71c1626e5a5fa0a96596b",
+            measurementId: "G-9R2C1174BG"
+        };
+
+        // 3. Initialize Firebase & Auth
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // DOM Elements
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const loginSection = document.getElementById('login-section');
+        const userInfoSection = document.getElementById('user-info');
+        const profilePic = document.getElementById('profile-pic');
+        const userName = document.getElementById('user-name');
+        const userEmail = document.getElementById('user-email');
+        const statusMessage = document.getElementById('status-message');
+
+        // 4. Handle Login with Persistence
+        loginBtn.addEventListener('click', () => {
+            // "browserLocalPersistence" tells Firebase to save the session even if browser is closed
+            setPersistence(auth, browserLocalPersistence)
+                .then(() => {
+                    return signInWithPopup(auth, provider);
+                })
+                .catch((error) => {
+                    alert("Login failed: " + error.message);
+                });
+        });
+
+        // 5. Handle Logout
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth).then(() => {
+                console.log("Logged out.");
+            });
+        });
+
+        // 6. THE CONTROLLER: onAuthStateChanged
+        // This function runs automatically whenever the page loads or the user's status changes.
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is logged in (or was already logged in from a previous session)
+                loginSection.classList.add('hidden');
+                userInfoSection.classList.remove('hidden');
+                
+                profilePic.src = user.photoURL;
+                userName.textContent = user.displayName;
+                userEmail.textContent = user.email;
+                statusMessage.textContent = "Welcome back, Traveler!";
+            } else {
+                // User is logged out
+                loginSection.classList.remove('hidden');
+                userInfoSection.classList.add('hidden');
+                statusMessage.textContent = "Please sign in to plan your trip.";
+            }
+        });
+    </script>
+</body>
+</html>
