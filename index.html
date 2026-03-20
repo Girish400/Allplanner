@@ -5,60 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adventure Planner - Login</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f9f4;
-            color: #2c3e50;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
-        }
-        h1 { color: #2e7d32; }
-        .btn {
-            background-color: #4285F4;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            transition: background 0.3s ease;
-        }
-        .btn:hover { background-color: #3367D6; }
-        .btn-logout { background-color: #d32f2f; margin-top: 10px; }
-        .hidden { display: none !important; }
-        #user-info { margin-top: 20px; }
-        #user-info img { border-radius: 50%; width: 70px; height: 70px; border: 3px solid #2e7d32; }
+        /* ... existing styles ... */
+        .error-message { color: #d32f2f; font-size: 0.9rem; margin-top: 10px; }
+        .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #2e7d32; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div class="login-container">
-        <h1>🏕️ Trip Planner</h1>
-        <p id="status-message">Loading...</p>
+        <h1>Briefly: Trip Planner</h1>
+        <p id="status-message">Connecting to basecamp...</p>
+        <div id="error-display" class="error-message hidden"></div>
 
         <div id="login-section" class="hidden">
-            <button class="btn" id="login-btn">Sign in with Google</button>
+            <button class="btn" id="login-btn">
+                <span>Sign in with Google</span>
+            </button>
         </div>
 
         <div id="user-info" class="hidden">
-            <img id="profile-pic" src="" alt="Profile Picture">
+            <img id="profile-pic" src="" alt="User profile">
             <h3 id="user-name"></h3>
             <p id="user-email"></p>
             <button class="btn btn-logout" id="logout-btn">Sign Out</button>
@@ -66,7 +33,6 @@
     </div>
 
     <script type="module">
-        // 1. Import the necessary Firebase functions
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { 
             getAuth, 
@@ -78,70 +44,75 @@
             browserLocalPersistence 
         } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-        // 2. Your Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc",
+            apiKey: "AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc", // Note: Restrict this in Firebase Console
             authDomain: "camp-cbf1d.firebaseapp.com",
             projectId: "camp-cbf1d",
             storageBucket: "camp-cbf1d.firebasestorage.app",
             messagingSenderId: "879899618290",
-            appId: "1:879899618290:web:c71c1626e5a5fa0a96596b",
-            measurementId: "G-9R2C1174BG"
+            appId: "1:879899618290:web:c71c1626e5a5fa0a96596b"
         };
 
-        // 3. Initialize Firebase & Auth
+        // Initialize
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // DOM Elements
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const loginSection = document.getElementById('login-section');
-        const userInfoSection = document.getElementById('user-info');
-        const profilePic = document.getElementById('profile-pic');
-        const userName = document.getElementById('user-name');
-        const userEmail = document.getElementById('user-email');
-        const statusMessage = document.getElementById('status-message');
+        const elements = {
+            loginBtn: document.getElementById('login-btn'),
+            logoutBtn: document.getElementById('logout-btn'),
+            loginSection: document.getElementById('login-section'),
+            userInfoSection: document.getElementById('user-info'),
+            profilePic: document.getElementById('profile-pic'),
+            userName: document.getElementById('user-name'),
+            userEmail: document.getElementById('user-email'),
+            statusMessage: document.getElementById('status-message'),
+            errorDisplay: document.getElementById('error-display')
+        };
 
-        // 4. Handle Login with Persistence
-        loginBtn.addEventListener('click', () => {
-            // "browserLocalPersistence" tells Firebase to save the session even if browser is closed
-            setPersistence(auth, browserLocalPersistence)
-                .then(() => {
-                    return signInWithPopup(auth, provider);
-                })
-                .catch((error) => {
-                    alert("Login failed: " + error.message);
-                });
-        });
+        const showError = (msg) => {
+            elements.errorDisplay.textContent = msg;
+            elements.errorDisplay.classList.remove('hidden');
+        };
 
-        // 5. Handle Logout
-        logoutBtn.addEventListener('click', () => {
-            signOut(auth).then(() => {
-                console.log("Logged out.");
-            });
-        });
-
-        // 6. THE CONTROLLER: onAuthStateChanged
-        // This function runs automatically whenever the page loads or the user's status changes.
-        onAuthStateChanged(auth, (user) => {
+        // UI State Switcher
+        const updateUI = (user) => {
+            elements.errorDisplay.classList.add('hidden');
             if (user) {
-                // User is logged in (or was already logged in from a previous session)
-                loginSection.classList.add('hidden');
-                userInfoSection.classList.remove('hidden');
-                
-                profilePic.src = user.photoURL;
-                userName.textContent = user.displayName;
-                userEmail.textContent = user.email;
-                statusMessage.textContent = "Welcome back, Traveler!";
+                elements.loginSection.classList.add('hidden');
+                elements.userInfoSection.classList.remove('hidden');
+                elements.profilePic.src = user.photoURL || 'https://via.placeholder.com/70';
+                elements.profilePic.alt = user.displayName || 'User';
+                elements.userName.textContent = user.displayName;
+                elements.userEmail.textContent = user.email;
+                elements.statusMessage.textContent = "Welcome back, Traveler!";
             } else {
-                // User is logged out
-                loginSection.classList.remove('hidden');
-                userInfoSection.classList.add('hidden');
-                statusMessage.textContent = "Please sign in to plan your trip.";
+                elements.loginSection.classList.remove('hidden');
+                elements.userInfoSection.classList.add('hidden');
+                elements.statusMessage.textContent = "Please sign in to plan your trip.";
+            }
+        };
+
+        // Logic
+        elements.loginBtn.addEventListener('click', async () => {
+            try {
+                elements.loginBtn.disabled = true;
+                elements.statusMessage.textContent = "Authenticating...";
+                await setPersistence(auth, browserLocalPersistence);
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                showError("Auth Error: " + error.message);
+                elements.statusMessage.textContent = "Sign in failed.";
+            } finally {
+                elements.loginBtn.disabled = false;
             }
         });
+
+        elements.logoutBtn.addEventListener('click', () => {
+            signOut(auth).catch(err => showError("Logout failed: " + err.message));
+        });
+
+        onAuthStateChanged(auth, updateUI);
     </script>
 </body>
 </html>
