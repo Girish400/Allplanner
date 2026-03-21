@@ -1,794 +1,201 @@
-
-
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Trip Planner - Login</title> <style> *, *::before, *::after { box-sizing: border-box; } body { font-fa
-
-pasted
-
-review and just show me the bugs, do not fix the code.This code works perfectly fine on google chrome and opera, however due to restrictions on safari browser, there are some workaround in the code
-
-8:58 AM
-Looking at the code, here are the bugs and issues I found:
-
-1. Race Condition in main() — onAuthStateChanged fires before handleRedirectResult onAuthStateChanged is registered and can fire before await handleRedirectResult() completes. If the user has no session and there's a pending redirect, showLoginUI() inside onAuthStateChanged will flash before the redirect overlay appears.
-
-2. Broken auth/already-initialized Recovery Block Inside the catch block for auth/already-initialized, the code does a dynamic import() and assigns auth and provider inside a .then() — but execution continues synchronously past that block, so auth and provider remain undefined for main() and the event listeners that run immediately after.
-
-3. hasPendingRedirect() Timestamp Comparison Bug parseInt(timestamp, 10) returns NaN if the stored value is corrupted or non-numeric. Date.now() - NaN is NaN, and NaN > 300000 is false, so a corrupt/stale redirect entry will never be cleared and will permanently block showLoginUI() from rendering on non-Safari browsers.
-
-4. signInWithPopup on Safari Passes browserPopupRedirectResolver Despite Not Being Initialized With It The comment even acknowledges this is intentional, but it creates inconsistency — if Firebase internally caches resolver state during initializeAuth, passing a resolver only at call-time may behave unpredictably across Firebase versions.
-
-5. sessionStorage.clear() in the auth/missing-initial-state Handler is Too Aggressive Calling sessionStorage.clear() nukes all session data for the origin, not just Firebase's keys. This could silently destroy unrelated app state if the page is ever embedded or extended.
-
-6. initTimeout is Only Cleared Inside onAuthStateChanged Callback If onAuthStateChanged itself throws or the Firebase SDK fails to attach the listener, the timeout never clears and will fire the error UI at 8 seconds even if the page has already shown the correct state.
-
-7. No Guard if auth is undefined When Event Listeners Fire loginBtn and logoutBtn event listeners call signInWithGoogle() and signOut(auth) respectively. If Firebase initialization fails (or the already-initialized async recovery hasn't resolved), auth is undefined and both handlers will throw an uncaught runtime error.
-
-fix the code but make sure all the above bugs are resolved and i dont get error "Unable to process request due to missing initial state. This may happen if browser sessionStorage is inaccessible or accidentally cleared. Some specific scenarios are - 1) Using IDP-Initiated SAML SSO. 2) Using signInWithRedirect in a storage-partitioned browser environment."
-
-8:59 AM
-
-Reading the frontend design skill
-Reading the frontend design skill
-Now let me carefully analyze all the bugs and write the fixed code:
-
-
-Created a file, read a file
-Created a file, read a file
-Here's a breakdown of every fix applied, mapped to each bug:
-
-Bug 1 — Race condition (onAuthStateChanged vs handleRedirectResult) handleRedirectResult() now awaits to completion before onAuthStateChanged is registered. This eliminates the flash where the listener would fire with user=null mid-redirect, causing a spurious showLoginUI().
-
-Bug 2 — Broken auth/already-initialized async recovery Replaced the async .then() recovery (which left auth/provider as undefined) with a synchronous getApps().length > 0 ? getApp() : initializeApp(...) check. The already-initialized catch now calls getAuth(app) synchronously. Both paths resolve before any async work begins.
-
-Bug 3 — NaN timestamp in hasPendingRedirect() Added Number.isFinite(timestamp) validation after parseInt. Any corrupt, empty, or non-numeric stored value now correctly clears the key and returns false rather than silently blocking showLoginUI() forever.
-
-Bug 4 — Safari resolver inconsistency Added a code comment clarifying the intentional pattern: browserPopupRedirectResolver is deliberately omitted from initializeAuth on Safari (prevents eager getRedirectResult → auth/missing-initial-state), then passed explicitly only at the signInWithPopup call site, which is the documented Firebase approach.
-
-Bug 5 — Aggressive sessionStorage.clear() Replaced all sessionStorage.clear() calls with targeted removal of only the three known Firebase redirect keys (firebase:pendingRedirect, firebase:redirectUser, firebase:authEvent). This also runs in the <head> script before Firebase loads.
-
-Bug 6 — initTimeout never cleared on SDK failure Wrapped onAuthStateChanged registration in a try/catch. The timeout handle is now clearTimeout'd in both the success callback, the error callback, and the catch block — guaranteeing it always cancels.
-
-Bug 7 — Buttons enabled before auth is defined Both buttons start with disabled in the HTML. They are only re-enabled after main() completes its full auth-state handshake, so click handlers can never fire while auth or provider are undefined.
-
-Index
-Code · HTML 
-
-
-
-
-
-Claude is AI and can make mistakes. Please double-check responses.
-Index · HTML
-Copy
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trip Planner - Login</title>
- 
+    <title>Camp & Trip Planner</title>
     <style>
-        *, *::before, *::after { box-sizing: border-box; }
- 
+        :root {
+            --primary-color: #2F4F4F; /* Dark Slate Gray for outdoor theme */
+            --accent-color: #D2691E; /* Chocolate/Wood color */
+            --bg-color: #F5F5DC; /* Beige */
+            --text-color: #333;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f9f4;
-            color: #2c3e50;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh;
             margin: 0;
-            padding: 1rem;
         }
- 
-        .login-container {
+        .container {
             background: white;
-            padding: 40px;
+            padding: 2.5rem;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
             text-align: center;
             max-width: 400px;
-            width: 100%;
+            width: 90%;
         }
- 
-        h1 { color: #2e7d32; margin-top: 0; }
- 
-        .btn {
-            background-color: #4285F4;
+        h1 { color: var(--primary-color); }
+        p { color: #666; margin-bottom: 2rem; }
+        button {
+            background-color: var(--primary-color);
             color: white;
             border: none;
             padding: 12px 24px;
-            border-radius: 6px;
             font-size: 16px;
+            border-radius: 6px;
             cursor: pointer;
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            transition: background 0.3s ease;
             width: 100%;
-            transition: background 0.3s ease, opacity 0.2s ease;
-        }
- 
-        .btn:hover:not(:disabled) { background-color: #3367D6; }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
- 
-        .btn-logout { background-color: #d32f2f; margin-top: 10px; }
-        .btn-logout:hover:not(:disabled) { background-color: #b71c1c; }
- 
-        .hidden { display: none !important; }
- 
-        #user-info { margin-top: 20px; }
- 
-        #profile-pic {
-            border-radius: 50%;
-            width: 70px;
-            height: 70px;
-            border: 3px solid #2e7d32;
-            object-fit: cover;
-            background-color: #e8f5e9;
-        }
- 
-        #error-message {
-            color: #c62828;
-            background: #ffebee;
-            border-radius: 6px;
-            padding: 10px 14px;
-            margin-top: 12px;
-            font-size: 14px;
-            text-align: left;
-        }
- 
-        #info-message {
-            color: #1565c0;
-            background: #e3f2fd;
-            border-radius: 6px;
-            padding: 10px 14px;
-            margin-top: 12px;
-            font-size: 14px;
-            text-align: left;
-        }
- 
-        .spinner {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255,255,255,0.4);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            margin-right: 8px;
-            flex-shrink: 0;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
- 
-        #redirect-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(244, 249, 244, 0.95);
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            gap: 16px;
-            font-size: 15px;
-            color: #2c3e50;
-            z-index: 100;
+            align-items: center;
+            gap: 10px;
         }
-        #redirect-overlay .big-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #c8e6c9;
-            border-top-color: #2e7d32;
+        button:hover:not(:disabled) { background-color: var(--accent-color); }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
             border-radius: 50%;
-            animation: spin 0.9s linear infinite;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: none;
         }
- 
-        .status-text { font-size: 14px; color: #555; margin: 0 0 4px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Views */
+        #dashboard-view { display: none; }
+        #error-message { color: red; font-size: 14px; margin-top: 15px; display: none; }
+        .user-info { margin-bottom: 20px; font-weight: bold; color: var(--primary-color); }
     </style>
- 
-    <!--
-        FIX #1 (Bug 1 partial + Bug 3 + Bug 5):
-        - Clean OAuth URL params BEFORE Firebase loads to prevent auth/missing-initial-state.
-        - Timestamp validation now guards against NaN (corrupt value) → fixes Bug 3.
-        - Only removes known Firebase OAuth keys from sessionStorage, NOT sessionStorage.clear()
-          → fixes Bug 5 (aggressive clearing).
-        - Runs synchronously so Firebase never sees stale redirect state → prevents
-          "Unable to process request due to missing initial state" error.
-    -->
-    <script>
-        (function () {
-            var ua = navigator.userAgent;
-            var isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
-            var isIOS    = /iPad|iPhone|iPod/.test(ua) ||
-                           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
- 
-            window.__SAFARI_POPUP_ONLY__ = isSafari || isIOS;
- 
-            // Always clean OAuth URL params on every browser, not just Safari.
-            // This ensures Firebase never auto-processes stale redirect state on any browser.
-            var url = new URL(window.location.href);
-            var oauthParams = ['state', 'code', 'scope', 'authuser', 'prompt',
-                               'apiKey', 'appName', 'authType', 'redirectUrl',
-                               'v', 'eventId'];
-            var hasOAuthParams = false;
- 
-            oauthParams.forEach(function (param) {
-                if (url.searchParams.has(param)) {
-                    url.searchParams.delete(param);
-                    hasOAuthParams = true;
-                }
-            });
- 
-            if (hasOAuthParams) {
-                window.history.replaceState(
-                    {},
-                    document.title,
-                    url.pathname + (url.search || '') + (url.hash || '')
-                );
-                console.log('Cleaned OAuth URL params before Firebase init.');
-            }
- 
-            // FIX #5: Remove ONLY the specific Firebase redirect keys from storage,
-            // never call sessionStorage.clear() which would nuke unrelated app state.
-            var FIREBASE_SESSION_KEYS = [
-                'firebase:pendingRedirect',
-                'firebase:redirectUser',
-                'firebase:authEvent'
-            ];
-            try {
-                // Only wipe Firebase's own redirect state, not everything
-                FIREBASE_SESSION_KEYS.forEach(function (k) {
-                    sessionStorage.removeItem(k);
-                    localStorage.removeItem(k);
-                });
-            } catch (e) { /* storage may be blocked; safe to ignore */ }
-        })();
-    </script>
 </head>
 <body>
- 
-    <div id="redirect-overlay" class="hidden" aria-live="polite" aria-label="Completing sign-in">
-        <div class="big-spinner"></div>
-        <span>Completing sign-in&hellip;</span>
-    </div>
- 
-    <div class="login-container" role="main">
-        <h1>&#127957;&#65039; Trip Planner</h1>
-        <p id="status-message" class="status-text" aria-live="polite">Loading&hellip;</p>
- 
-        <div id="error-message" class="hidden" role="alert" aria-live="assertive"></div>
-        <div id="info-message"  class="hidden" aria-live="polite"></div>
- 
-        <div id="login-section" class="hidden">
-            <!--
-                FIX #7: Button is disabled by default until auth is confirmed ready.
-                This prevents the click handler from firing while auth/provider are
-                still undefined (e.g. during async initialization or recovery).
-            -->
-            <button class="btn" id="login-btn" type="button"
-                    aria-label="Sign in with your Google account" disabled>
-                Sign in with Google
+
+    <div class="container">
+        <!-- Login View -->
+        <div id="login-view">
+            <h1>🏕️ Outdoor Planner</h1>
+            <p>Plan your Camp, RV Trip, or Picnic easily.</p>
+            <button id="login-btn" aria-label="Login with Google">
+                <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2045c0-.6381-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9086c1.7018-1.5668 2.6836-3.874 2.6836-6.615z"></path><path fill="#34A853" d="M9 18c2.43 0 4.4673-.806 5.9564-2.1805l-2.9086-2.2581c-.8059.54-1.8368.859-3.0478.859-2.344 0-4.3282-1.5831-5.036-3.7104H.9574v2.3318C2.4382 15.9832 5.4818 18 9 18z"></path><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.2822-1.1168-.2822-1.71s.1023-1.17.2823-1.71V4.9582H.9573A8.9965 8.9965 0 0 0 0 9c0 1.4523.3477 2.8268.9573 4.0418L3.964 10.71z"></path><path fill="#EA4335" d="M9 3.5795c1.3214 0 2.5077.4541 3.4405 1.346l2.5813-2.5814C13.4632.8918 11.426 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.964 7.29C4.6718 5.1627 6.6559 3.5795 9 3.5795z"></path></svg>
+                Continue with Google
+                <div class="spinner" id="login-spinner"></div>
             </button>
+            <div id="error-message"></div>
         </div>
- 
-        <div id="user-info" class="hidden" aria-live="polite">
-            <img id="profile-pic" alt="Profile picture" src="">
-            <h3 id="user-name" aria-label="Logged-in user name"></h3>
-            <p id="user-email" style="font-size:14px;color:#555;word-break:break-all;"></p>
-            <!--
-                FIX #7: Also disable logout button until auth is ready.
-            -->
-            <button class="btn btn-logout" id="logout-btn" type="button"
-                    aria-label="Sign out of your account" disabled>
-                Sign Out
+
+        <!-- Dashboard View -->
+        <div id="dashboard-view">
+            <h1>Welcome Back! 🎒</h1>
+            <div class="user-info" id="user-email"></div>
+            <p>Ready to plan your next adventure?</p>
+            <!-- Navigation links to your planner app features would go here -->
+            <button id="logout-btn" aria-label="Log out of the application">
+                Log Out
+                <div class="spinner" id="logout-spinner"></div>
             </button>
         </div>
     </div>
- 
+
+    <!-- Firebase v10 Modular SDKs via CDN -->
     <script type="module">
-        import { initializeApp, getApps, getApp } from
-            "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import {
-            initializeAuth,
-            getAuth,
-            signInWithPopup,
-            signInWithRedirect,
-            getRedirectResult,
-            GoogleAuthProvider,
-            signOut,
-            onAuthStateChanged,
-            indexedDBLocalPersistence,
-            browserLocalPersistence,
-            browserPopupRedirectResolver
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            signOut, 
+            onAuthStateChanged, 
+            setPersistence, 
+            browserLocalPersistence 
         } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
- 
+
+        // Your Firebase configuration
         const firebaseConfig = {
-            apiKey:            "AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc",
-            authDomain:        "camp-cbf1d.firebaseapp.com",
-            projectId:         "camp-cbf1d",
-            storageBucket:     "camp-cbf1d.firebasestorage.app",
+            apiKey: "AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc",
+            authDomain: "camp-cbf1d.firebaseapp.com",
+            projectId: "camp-cbf1d",
+            storageBucket: "camp-cbf1d.firebasestorage.app",
             messagingSenderId: "879899618290",
-            appId:             "1:879899618290:web:c71c1626e5a5fa0a96596b",
-            measurementId:     "G-9R2C1174BG"
+            appId: "1:879899618290:web:c71c1626e5a5fa0a96596b",
+            measurementId: "G-9R2C1174BG"
         };
- 
-        const SAFARI_POPUP_ONLY = window.__SAFARI_POPUP_ONLY__ || false;
- 
-        // ============================================================
-        // DOM References
-        // ============================================================
-        const loginBtn        = document.getElementById('login-btn');
-        const logoutBtn       = document.getElementById('logout-btn');
-        const loginSection    = document.getElementById('login-section');
-        const userInfoSec     = document.getElementById('user-info');
-        const profilePic      = document.getElementById('profile-pic');
-        const userName        = document.getElementById('user-name');
-        const userEmail       = document.getElementById('user-email');
-        const statusMsg       = document.getElementById('status-message');
-        const errorMsg        = document.getElementById('error-message');
-        const infoMsg         = document.getElementById('info-message');
-        const redirectOverlay = document.getElementById('redirect-overlay');
- 
-        const DEFAULT_AVATAR = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 70 70%22><circle cx=%2235%22 cy=%2235%22 r=%2235%22 fill=%22%23c8e6c9%22/><text x=%2235%22 y=%2241%22 text-anchor=%22middle%22 font-size=%2228%22 fill=%22%232e7d32%22>&#128100;</text></svg>';
- 
-        // ============================================================
-        // Redirect State Management
-        // FIX #3: Guard timestamp parse against NaN so corrupt/missing
-        // values never falsely keep hasPendingRedirect() returning true.
-        // ============================================================
-        const REDIRECT_KEY = 'firebase_auth_pending_redirect';
-        const REDIRECT_TTL = 5 * 60 * 1000; // 5 minutes
- 
-        function setPendingRedirect() {
-            if (SAFARI_POPUP_ONLY) return;
-            try {
-                localStorage.setItem(REDIRECT_KEY, Date.now().toString());
-            } catch (e) {
-                try { sessionStorage.setItem(REDIRECT_KEY, Date.now().toString()); } catch (e2) {}
-            }
-        }
- 
-        function clearPendingRedirect() {
-            try {
-                localStorage.removeItem(REDIRECT_KEY);
-                sessionStorage.removeItem(REDIRECT_KEY);
-            } catch (e) {}
-        }
- 
-        function hasPendingRedirect() {
-            if (SAFARI_POPUP_ONLY) {
-                clearPendingRedirect();
-                return false;
-            }
-            try {
-                // FIX #3: Parse timestamp from either storage, validate it is a real
-                // finite number before arithmetic — NaN comparisons always return false
-                // and would cause the stale entry to persist forever.
-                const raw = localStorage.getItem(REDIRECT_KEY)
-                         || sessionStorage.getItem(REDIRECT_KEY);
- 
-                if (raw !== null) {
-                    const timestamp = parseInt(raw, 10);
- 
-                    // Guard: reject NaN, Infinity, or any non-finite parsed value
-                    if (!Number.isFinite(timestamp)) {
-                        clearPendingRedirect();
-                        return false;
-                    }
- 
-                    if (Date.now() - timestamp > REDIRECT_TTL) {
-                        clearPendingRedirect();
-                        return false;
-                    }
-                    return true;
-                }
-            } catch (e) { /* storage blocked */ }
-            return false;
-        }
- 
-        // ============================================================
-        // UI Helper Functions
-        // ============================================================
-        function showError(msg) {
-            errorMsg.textContent = msg;
-            errorMsg.classList.remove('hidden');
-            infoMsg.classList.add('hidden');
-        }
- 
-        function clearError() {
-            errorMsg.textContent = '';
-            errorMsg.classList.add('hidden');
-        }
- 
-        function showInfo(msg) {
-            infoMsg.textContent = msg;
-            infoMsg.classList.remove('hidden');
-            errorMsg.classList.add('hidden');
-        }
- 
-        function clearInfo() {
-            infoMsg.textContent = '';
-            infoMsg.classList.add('hidden');
-        }
- 
-        function clearMessages() {
-            clearError();
-            clearInfo();
-        }
- 
-        function setLoading(button, loading) {
-            if (!button) return;
-            if (loading) {
-                button.disabled = true;
-                if (!button.querySelector('.spinner')) {
-                    const s = document.createElement('span');
-                    s.className = 'spinner';
-                    s.setAttribute('aria-hidden', 'true');
-                    button.prepend(s);
-                }
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // Ensure session remains until explicitly logged out
+        setPersistence(auth, browserLocalPersistence).catch((error) => {
+            console.error("Error setting auth persistence:", error);
+        });
+
+        // Use device language for the Google Auth Popup
+        auth.useDeviceLanguage();
+
+        // DOM Elements
+        const loginView = document.getElementById('login-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const loginSpinner = document.getElementById('login-spinner');
+        const logoutSpinner = document.getElementById('logout-spinner');
+        const userEmailDisplay = document.getElementById('user-email');
+        const errorMessage = document.getElementById('error-message');
+
+        // Monitor Auth State (Fires on load and on login/logout)
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in
+                loginView.style.display = 'none';
+                dashboardView.style.display = 'block';
+                userEmailDisplay.textContent = user.email; // e.g. girishsancheti@gmail.com
             } else {
-                button.disabled = false;
-                const s = button.querySelector('.spinner');
-                if (s) s.remove();
-            }
-        }
- 
-        function isTrustedPhotoUrl(url) {
-            if (!url || typeof url !== 'string') return false;
-            try {
-                const u = new URL(url);
-                return ['lh3.googleusercontent.com', 'googleusercontent.com']
-                    .includes(u.hostname);
-            } catch { return false; }
-        }
- 
-        function showUserUI(user) {
-            clearMessages();
-            clearPendingRedirect();
-            loginSection.classList.add('hidden');
-            userInfoSec.classList.remove('hidden');
-            redirectOverlay.classList.add('hidden');
-            profilePic.src        = isTrustedPhotoUrl(user.photoURL) ? user.photoURL : DEFAULT_AVATAR;
-            userName.textContent  = user.displayName || 'Traveler';
-            userEmail.textContent = user.email || '';
-            statusMsg.textContent = 'Welcome back, ' +
-                (user.displayName || 'Traveler').split(' ')[0] + '!';
-            setLoading(logoutBtn, false);
-            setLoading(loginBtn, false);
-        }
- 
-        function showLoginUI() {
-            clearMessages();
-            loginSection.classList.remove('hidden');
-            userInfoSec.classList.add('hidden');
-            redirectOverlay.classList.add('hidden');
-            statusMsg.textContent = 'Please sign in to plan your trip.';
-            profilePic.src        = '';
-            userName.textContent  = '';
-            userEmail.textContent = '';
-            setLoading(loginBtn, false);
-            setLoading(logoutBtn, false);
-        }
- 
-        // ============================================================
-        // FIX #2: Firebase Initialization
-        // Replaced the broken try/catch + async .then() recovery pattern
-        // with a synchronous getApps() check. getApps() is synchronous and
-        // always resolves immediately — no async gap where auth/provider
-        // could remain undefined while event listeners are already active.
-        // ============================================================
-        let auth, provider;
- 
-        function initFirebase() {
-            // Use existing app if already initialized (e.g. hot reload in dev),
-            // otherwise create a new one. Both paths are fully synchronous.
-            const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
- 
-            if (SAFARI_POPUP_ONLY) {
-                // Safari/iOS: Initialize WITHOUT popupRedirectResolver.
-                // Passing it at the initializeAuth level causes Firebase to
-                // eagerly attempt getRedirectResult on load, which triggers
-                // auth/missing-initial-state on Safari. We pass the resolver
-                // only at the signInWithPopup call site instead (see below).
-                auth = initializeAuth(app, {
-                    persistence: [indexedDBLocalPersistence, browserLocalPersistence]
-                    // No popupRedirectResolver here — intentional for Safari
-                });
-            } else {
-                try {
-                    auth = initializeAuth(app, {
-                        persistence: [indexedDBLocalPersistence, browserLocalPersistence],
-                        popupRedirectResolver: browserPopupRedirectResolver
-                    });
-                } catch (e) {
-                    // initializeAuth throws if auth was already created for this app
-                    // (e.g. second call in same JS context). Fall back to getAuth().
-                    if (e.code === 'auth/already-initialized') {
-                        auth = getAuth(app);
-                    } else {
-                        throw e;
-                    }
-                }
-            }
- 
-            provider = new GoogleAuthProvider();
-            provider.addScope('profile');
-            provider.addScope('email');
-            provider.setCustomParameters({ prompt: 'select_account' });
-        }
- 
-        // ============================================================
-        // Sign-In Function
-        // FIX #7 guard: auth/provider are guaranteed defined before this
-        // can be called because buttons are disabled until initFirebase()
-        // succeeds and main() has completed its auth-state handshake.
-        // ============================================================
-        async function signInWithGoogle() {
-            clearMessages();
-            setLoading(loginBtn, true);
- 
-            if (SAFARI_POPUP_ONLY) {
-                // FIX #4 clarified: On Safari we intentionally did NOT pass
-                // browserPopupRedirectResolver to initializeAuth (prevents
-                // auth/missing-initial-state). We MUST pass it here at the
-                // call site so signInWithPopup can open the popup correctly.
-                // This is the documented Firebase pattern for this scenario.
-                try {
-                    await signInWithPopup(auth, provider, browserPopupRedirectResolver);
-                    // onAuthStateChanged handles UI update
-                } catch (popupError) {
-                    console.error('Safari popup error:', popupError.code, popupError);
-                    handlePopupError(popupError, /* isSafari */ true);
-                    setLoading(loginBtn, false);
-                }
-                return;
-            }
- 
-            // Chrome / Firefox / Edge: try popup, fall back to redirect
-            try {
-                await signInWithPopup(auth, provider, browserPopupRedirectResolver);
-                // onAuthStateChanged handles UI update
-            } catch (error) {
-                if (error.code === 'auth/popup-closed-by-user' ||
-                    error.code === 'auth/cancelled-popup-request') {
-                    statusMsg.textContent = 'Sign-in cancelled. Please try again.';
-                    setLoading(loginBtn, false);
-                } else if (error.code === 'auth/popup-blocked') {
-                    showInfo('Popup was blocked. Redirecting you to Google sign-in…');
-                    setPendingRedirect();
-                    try {
-                        await new Promise(resolve => setTimeout(resolve, 800));
-                        await signInWithRedirect(auth, provider, browserPopupRedirectResolver);
-                        // Page will navigate away; no further cleanup needed here
-                    } catch (redirectError) {
-                        clearPendingRedirect();
-                        showError('Sign-in failed. Please allow popups and try again.');
-                        console.error('Redirect error:', redirectError);
-                        setLoading(loginBtn, false);
-                    }
-                } else if (error.code === 'auth/network-request-failed' || !navigator.onLine) {
-                    showError('Network error. Please check your internet connection.');
-                    setLoading(loginBtn, false);
-                } else {
-                    handlePopupError(error, /* isSafari */ false);
-                    setLoading(loginBtn, false);
-                }
-            }
-        }
- 
-        // Shared popup error handler
-        function handlePopupError(error, isSafari) {
-            if (error.code === 'auth/popup-closed-by-user' ||
-                error.code === 'auth/cancelled-popup-request') {
-                statusMsg.textContent = 'Sign-in cancelled. Please try again.';
-            } else if (error.code === 'auth/popup-blocked') {
-                if (isSafari) {
-                    showError(
-                        'Popup was blocked. Allow popups for this site:\n\n' +
-                        'Safari → Settings → Websites → Pop-up Windows → Allow\n\n' +
-                        'Then try again.'
-                    );
-                } else {
-                    showError('Popup was blocked. Please allow popups and try again.');
-                }
-            } else if (error.code === 'auth/network-request-failed' || !navigator.onLine) {
-                showError('Network error. Please check your internet connection.');
-            } else if (error.code === 'auth/unauthorized-domain') {
-                showError('This domain is not authorised for sign-in. Please contact support.');
-            } else if (error.code === 'auth/missing-initial-state') {
-                // FIX #5: Clear ONLY Firebase-specific keys, not sessionStorage.clear()
-                try {
-                    ['firebase:pendingRedirect', 'firebase:redirectUser', 'firebase:authEvent']
-                        .forEach(k => {
-                            sessionStorage.removeItem(k);
-                            localStorage.removeItem(k);
-                        });
-                } catch (e) {}
-                showError('Browser security settings blocked sign-in. Please try again.');
-            } else {
-                showError('Sign-in failed. Please try again.');
-            }
-        }
- 
-        // ============================================================
-        // Handle Redirect Result (non-Safari browsers only)
-        // ============================================================
-        async function handleRedirectResult() {
-            if (SAFARI_POPUP_ONLY) {
-                clearPendingRedirect();
-                redirectOverlay.classList.add('hidden');
-                return false;
-            }
- 
-            const hadPendingRedirect = hasPendingRedirect();
- 
-            if (hadPendingRedirect) {
-                redirectOverlay.classList.remove('hidden');
-                statusMsg.textContent = 'Completing sign-in…';
-            }
- 
-            try {
-                const result = await getRedirectResult(auth, browserPopupRedirectResolver);
- 
-                if (result && result.user) {
-                    clearPendingRedirect();
-                    redirectOverlay.classList.add('hidden');
-                    return true;
-                }
- 
-                if (hadPendingRedirect) {
-                    clearPendingRedirect();
-                    redirectOverlay.classList.add('hidden');
-                    showLoginUI();
-                    showInfo('Sign-in did not complete. Please try again.');
-                }
-            } catch (error) {
-                clearPendingRedirect();
-                redirectOverlay.classList.add('hidden');
-                showLoginUI();
- 
-                if (error.code === 'auth/missing-initial-state') {
-                    showError(
-                        'Sign-in was blocked by browser privacy settings. ' +
-                        'Please try again.'
-                    );
-                    console.error('ITP/missing-state blocked redirect:', error);
-                } else if (error.code === 'auth/network-request-failed') {
-                    showError('Network error during sign-in. Please check your connection.');
-                } else if (error.code === 'auth/internal-error') {
-                    showError('An internal error occurred. Please try again.');
-                    console.error('Internal auth error:', error);
-                } else if (error.code && error.code !== 'auth/no-auth-event') {
-                    showError('Sign-in was interrupted. Please try again.');
-                    console.error('Redirect result error:', error);
-                }
-            }
-            return false;
-        }
- 
-        // ============================================================
-        // Event Listeners
-        // Buttons start disabled (see HTML); they are only enabled after
-        // auth is initialised and ready — FIX #7.
-        // ============================================================
-        loginBtn.addEventListener('click', signInWithGoogle);
- 
-        logoutBtn.addEventListener('click', async () => {
-            clearMessages();
-            setLoading(logoutBtn, true);
-            try {
-                await signOut(auth);
-            } catch (error) {
-                showError('Sign-out failed. Please check your connection and try again.');
-                console.error('Logout error:', error);
-                setLoading(logoutBtn, false);
+                // User is signed out
+                loginView.style.display = 'block';
+                dashboardView.style.display = 'none';
+                userEmailDisplay.textContent = '';
             }
         });
- 
-        // ============================================================
-        // Main Initialization
-        // FIX #1 (race condition): handleRedirectResult() now COMPLETES
-        // before onAuthStateChanged is registered. This guarantees:
-        //   1. Redirect state is fully resolved and cleared first.
-        //   2. onAuthStateChanged fires exactly once with the final,
-        //      correct user state — no UI flicker or double-render.
-        // FIX #6: initTimeout is cleared in a finally block, not only
-        // inside onAuthStateChanged, so it always cancels even if the
-        // auth SDK throws before the callback fires.
-        // ============================================================
-        async function main() {
-            // FIX #2: Synchronous init — auth and provider are guaranteed
-            // defined before any async work or listener registration below.
+
+        // Login Handler
+        loginBtn.addEventListener('click', async () => {
+            errorMessage.style.display = 'none';
+            loginBtn.disabled = true;
+            loginSpinner.style.display = 'block';
+
             try {
-                initFirebase();
-            } catch (initErr) {
-                showError('Failed to initialise authentication. Please refresh and try again.');
-                console.error('Firebase init error:', initErr);
-                return; // Cannot proceed without auth
-            }
- 
-            // FIX #1: Handle redirect result FIRST, before registering
-            // onAuthStateChanged. This prevents the stale-null-user flash
-            // where the listener fires with user=null mid-redirect resolution.
-            if (!SAFARI_POPUP_ONLY) {
-                await handleRedirectResult();
-            }
- 
-            // FIX #6: Track the timeout handle so we can cancel it in a
-            // finally block — not only from inside the auth callback.
-            let initTimeout;
- 
-            await new Promise((resolve) => {
-                initTimeout = setTimeout(() => {
-                    // Only show the error if we're still in the loading state
-                    if (statusMsg.textContent === 'Loading\u2026') {
-                        showError(
-                            'Authentication service is taking longer than expected. ' +
-                            'Please check your connection.'
-                        );
-                        showLoginUI();
-                        statusMsg.textContent = 'Ready.';
-                    }
-                    resolve();
-                }, 8000);
- 
-                // FIX #6: Wrap onAuthStateChanged in try/catch so errors
-                // surface properly and always cancel the timeout.
-                try {
-                    const unsubscribe = onAuthStateChanged(
-                        auth,
-                        (user) => {
-                            clearTimeout(initTimeout); // FIX #6
-                            unsubscribe();             // Listen only for first emission
-                            resolve();
- 
-                            if (user) {
-                                showUserUI(user);
-                            } else {
-                                // Only show login UI if we're not mid-redirect
-                                if (SAFARI_POPUP_ONLY || !hasPendingRedirect()) {
-                                    showLoginUI();
-                                }
-                            }
-                        },
-                        (error) => {
-                            clearTimeout(initTimeout); // FIX #6
-                            clearPendingRedirect();
-                            showError('An authentication error occurred. Please refresh the page.');
-                            showLoginUI();
-                            statusMsg.textContent = 'Service unavailable.';
-                            console.error('Auth state error:', error);
-                            resolve();
-                        }
-                    );
-                } catch (listenerErr) {
-                    // FIX #6: If onAuthStateChanged itself throws (SDK error),
-                    // the timeout is still cancelled and the app degrades gracefully.
-                    clearTimeout(initTimeout);
-                    showError('Failed to connect to authentication service. Please refresh.');
-                    showLoginUI();
-                    console.error('onAuthStateChanged setup error:', listenerErr);
-                    resolve();
+                await signInWithPopup(auth, provider);
+                // Note: UI update is handled automatically by onAuthStateChanged
+            } catch (error) {
+                console.error("Login Error:", error);
+                // Handle user closing popup gracefully
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    errorMessage.textContent = "Failed to sign in. Please try again.";
+                    errorMessage.style.display = 'block';
                 }
-            });
- 
-            // FIX #7: Auth is now fully ready — enable buttons.
-            loginBtn.disabled  = false;
-            logoutBtn.disabled = false;
-        }
- 
-        // Start the app
-        main().catch(err => {
-            console.error('App initialization error:', err);
-            showError('Failed to initialize. Please refresh the page.');
-            showLoginUI();
-            statusMsg.textContent = 'Error.';
-            // FIX #7: Even on failure, re-enable login button so user can retry
-            loginBtn.disabled = false;
+            } finally {
+                loginBtn.disabled = false;
+                loginSpinner.style.display = 'none';
+            }
+        });
+
+        // Logout Handler
+        logoutBtn.addEventListener('click', async () => {
+            logoutBtn.disabled = true;
+            logoutSpinner.style.display = 'block';
+
+            try {
+                await signOut(auth);
+                // UI update handled by onAuthStateChanged
+            } catch (error) {
+                console.error("Logout Error:", error);
+                alert("Failed to log out. Please check your connection.");
+            } finally {
+                logoutBtn.disabled = false;
+                logoutSpinner.style.display = 'none';
+            }
         });
     </script>
 </body>
 </html>
- 
