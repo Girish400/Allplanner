@@ -5,12 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Camp & Trip Planner</title>
     <style>
+        /* CSS Reset & Variables */
         :root {
-            --primary-color: #2F4F4F; /* Dark Slate Gray for outdoor theme */
-            --accent-color: #D2691E; /* Chocolate/Wood color */
+            --primary-color: #2F4F4F; /* Dark Slate Gray */
+            --accent-color: #D2691E; /* Chocolate/Wood */
             --bg-color: #F5F5DC; /* Beige */
             --text-color: #333;
+            --error-color: #d32f2f;
+            --focus-ring: 3px solid #D2691E;
         }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
@@ -18,9 +26,13 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            /* Bug 9 Fix: Use dvh for mobile keyboards with standard vh fallback */
+            min-height: 100vh;
+            min-height: 100dvh; 
             margin: 0;
+            padding: 1rem;
         }
+
         .container {
             background: white;
             padding: 2.5rem;
@@ -28,10 +40,31 @@
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
             text-align: center;
             max-width: 400px;
-            width: 90%;
+            width: 100%;
         }
-        h1 { color: var(--primary-color); }
-        p { color: #666; margin-bottom: 2rem; }
+
+        /* Focus management for accessibility */
+        h1:focus {
+            outline: none;
+        }
+        
+        button:focus-visible {
+            outline: var(--focus-ring);
+            outline-offset: 2px;
+        }
+
+        h1 { color: var(--primary-color); margin-top: 0; }
+        p { color: #666; margin-bottom: 2rem; line-height: 1.5; }
+
+        .profile-pic {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+        }
+
         button {
             background-color: var(--primary-color);
             color: white;
@@ -47,10 +80,11 @@
             align-items: center;
             gap: 10px;
         }
+
         button:hover:not(:disabled) { background-color: var(--accent-color); }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         
-        /* Loading spinner */
+        /* Bug 16 Fix: Screen readers ignore the spinner */
         .spinner {
             border: 3px solid rgba(255,255,255,0.3);
             border-top: 3px solid white;
@@ -58,58 +92,103 @@
             width: 16px;
             height: 16px;
             animation: spin 1s linear infinite;
-            display: none;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Views */
-        #dashboard-view { display: none; }
-        #error-message { color: red; font-size: 14px; margin-top: 15px; display: none; }
-        .user-info { margin-bottom: 20px; font-weight: bold; color: var(--primary-color); }
+        .global-spinner {
+            width: 40px;
+            height: 40px;
+            border-color: rgba(47, 79, 79, 0.2);
+            border-top-color: var(--primary-color);
+            margin: 0 auto 1rem auto;
+        }
+
+        /* Bug 3 Fix: CSS visibility states instead of inline styles */
+        .hidden { display: none !important; }
+        
+        /* Bug 14 & Bug 7 Fix: Controlled error styling */
+        .error-message { 
+            color: var(--error-color); 
+            font-size: 14px; 
+            margin-top: 15px; 
+            padding: 10px;
+            background: #ffebee;
+            border-radius: 4px;
+            border-left: 4px solid var(--error-color);
+            text-align: left;
+        }
+
+        /* Screen Reader Only Utility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
     </style>
 </head>
 <body>
 
+    <!-- Bug 18 Fix: Polite live region for screen reader announcements -->
+    <div id="sr-announcer" class="sr-only" aria-live="polite"></div>
+
     <div class="container">
+        <!-- Bug 5 & 12 Fix: Initial Loading State to prevent layout flash -->
+        <div id="app-loading">
+            <div class="spinner global-spinner" aria-hidden="true"></div>
+            <p>Loading your planner...</p>
+        </div>
+
         <!-- Login View -->
-        <div id="login-view">
-            <h1>🏕️ Outdoor Planner</h1>
-            <p>Plan your Camp, RV Trip, or Picnic easily.</p>
-            <button id="login-btn" aria-label="Login with Google">
-                <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2045c0-.6381-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9086c1.7018-1.5668 2.6836-3.874 2.6836-6.615z"></path><path fill="#34A853" d="M9 18c2.43 0 4.4673-.806 5.9564-2.1805l-2.9086-2.2581c-.8059.54-1.8368.859-3.0478.859-2.344 0-4.3282-1.5831-5.036-3.7104H.9574v2.3318C2.4382 15.9832 5.4818 18 9 18z"></path><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.2822-1.1168-.2822-1.71s.1023-1.17.2823-1.71V4.9582H.9573A8.9965 8.9965 0 0 0 0 9c0 1.4523.3477 2.8268.9573 4.0418L3.964 10.71z"></path><path fill="#EA4335" d="M9 3.5795c1.3214 0 2.5077.4541 3.4405 1.346l2.5813-2.5814C13.4632.8918 11.426 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.964 7.29C4.6718 5.1627 6.6559 3.5795 9 3.5795z"></path></svg>
+        <div id="login-view" class="hidden">
+            <!-- Bug 15 Fix: tabindex="-1" allows JS to send focus here safely -->
+            <h1 id="login-heading" tabindex="-1">🏕️ Outdoor Planner</h1>
+            <p>Plan your Camp, RV Trip, or Picnic effortlessly.</p>
+            <button id="login-btn">
+                <!-- Bug 17 Fix: aria-hidden="true" on SVG -->
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2045c0-.6381-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9086c1.7018-1.5668 2.6836-3.874 2.6836-6.615z"></path><path fill="#34A853" d="M9 18c2.43 0 4.4673-.806 5.9564-2.1805l-2.9086-2.2581c-.8059.54-1.8368.859-3.0478.859-2.344 0-4.3282-1.5831-5.036-3.7104H.9574v2.3318C2.4382 15.9832 5.4818 18 9 18z"></path><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.2822-1.1168-.2822-1.71s.1023-1.17.2823-1.71V4.9582H.9573A8.9965 8.9965 0 0 0 0 9c0 1.4523.3477 2.8268.9573 4.0418L3.964 10.71z"></path><path fill="#EA4335" d="M9 3.5795c1.3214 0 2.5077.4541 3.4405 1.346l2.5813-2.5814C13.4632.8918 11.426 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.964 7.29C4.6718 5.1627 6.6559 3.5795 9 3.5795z"></path></svg>
                 Continue with Google
-                <div class="spinner" id="login-spinner"></div>
+                <div class="spinner hidden" id="login-spinner" aria-hidden="true"></div>
             </button>
-            <div id="error-message"></div>
+            <!-- Bug 14 Fix: role="alert" ensures screen readers read errors -->
+            <div id="login-error" class="error-message hidden" role="alert"></div>
         </div>
 
         <!-- Dashboard View -->
-        <div id="dashboard-view">
-            <h1>Welcome Back! 🎒</h1>
-            <div class="user-info" id="user-email"></div>
+        <div id="dashboard-view" class="hidden">
+            <!-- Bug 6 Fix: Personalized Dashboard UI -->
+            <img id="user-photo" src="" alt="User Profile" class="profile-pic hidden" />
+            <h1 id="dashboard-heading" tabindex="-1">Welcome, <span id="user-name"></span>! 🎒</h1>
+            <p id="user-email" class="sr-only"></p> <!-- Keep email available but visually out of the way -->
             <p>Ready to plan your next adventure?</p>
-            <!-- Navigation links to your planner app features would go here -->
-            <button id="logout-btn" aria-label="Log out of the application">
+            
+            <button id="logout-btn">
                 Log Out
-                <div class="spinner" id="logout-spinner"></div>
+                <div class="spinner hidden" id="logout-spinner" aria-hidden="true"></div>
             </button>
+            <!-- Bug 7 Fix: Controlled local error handling for logout -->
+            <div id="logout-error" class="error-message hidden" role="alert"></div>
         </div>
     </div>
 
-    <!-- Firebase v10 Modular SDKs via CDN -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        // Bug 1, 2, 10 Fix: Explicit imports for resolver and persistence mechanisms
         import { 
-            getAuth, 
+            initializeAuth, 
             signInWithPopup, 
             GoogleAuthProvider, 
             signOut, 
-            onAuthStateChanged, 
-            setPersistence, 
-            browserLocalPersistence 
+            onAuthStateChanged,
+            browserLocalPersistence,
+            browserPopupRedirectResolver
         } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-        // Your Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc",
             authDomain: "camp-cbf1d.firebaseapp.com",
@@ -120,80 +199,142 @@
             measurementId: "G-9R2C1174BG"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
-
-        // Ensure session remains until explicitly logged out
-        setPersistence(auth, browserLocalPersistence).catch((error) => {
-            console.error("Error setting auth persistence:", error);
+        
+        // Bug 1, 2 & 10 Fix: Synchronously apply persistence/resolvers during Auth initialization.
+        // This guarantees persistence state is resolved BEFORE the first onAuthStateChanged fires.
+        const auth = initializeAuth(app, {
+            persistence: browserLocalPersistence,
+            popupRedirectResolver: browserPopupRedirectResolver
         });
-
-        // Use device language for the Google Auth Popup
+        
+        const provider = new GoogleAuthProvider();
         auth.useDeviceLanguage();
 
         // DOM Elements
+        const appLoading = document.getElementById('app-loading');
         const loginView = document.getElementById('login-view');
         const dashboardView = document.getElementById('dashboard-view');
+        
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const loginSpinner = document.getElementById('login-spinner');
         const logoutSpinner = document.getElementById('logout-spinner');
+        
+        const userNameDisplay = document.getElementById('user-name');
         const userEmailDisplay = document.getElementById('user-email');
-        const errorMessage = document.getElementById('error-message');
+        const userPhoto = document.getElementById('user-photo');
+        
+        const loginError = document.getElementById('login-error');
+        const logoutError = document.getElementById('logout-error');
+        
+        const loginHeading = document.getElementById('login-heading');
+        const dashboardHeading = document.getElementById('dashboard-heading');
+        const srAnnouncer = document.getElementById('sr-announcer');
 
-        // Monitor Auth State (Fires on load and on login/logout)
-        onAuthStateChanged(auth, (user) => {
+        let previousAuthState = null; // Used to prevent redundant announcements on load
+
+        // Bug 13 Fix: Store the unsubscribe function. If this page is unmounted (e.g. in an SPA), call unsubscribeAuth()
+        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+            // Remove initial loading state on first resolution
+            appLoading.classList.add('hidden');
+
             if (user) {
-                // User is signed in
-                loginView.style.display = 'none';
-                dashboardView.style.display = 'block';
-                userEmailDisplay.textContent = user.email; // e.g. girishsancheti@gmail.com
+                // Bug 6 Fix: Apply rich user data
+                userNameDisplay.textContent = user.displayName ? user.displayName.split(' ')[0] : 'Camper';
+                userEmailDisplay.textContent = `Logged in as ${user.email}`;
+                
+                if (user.photoURL) {
+                    userPhoto.src = user.photoURL;
+                    userPhoto.classList.remove('hidden');
+                } else {
+                    userPhoto.classList.add('hidden');
+                }
+
+                loginView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+
+                // Bug 15 & 18 Fix: Manage focus and announce state change
+                if (previousAuthState === false) {
+                    dashboardHeading.focus();
+                    srAnnouncer.textContent = "Successfully signed in. Welcome to your dashboard.";
+                }
+                previousAuthState = true;
+
             } else {
-                // User is signed out
-                loginView.style.display = 'block';
-                dashboardView.style.display = 'none';
-                userEmailDisplay.textContent = '';
+                dashboardView.classList.add('hidden');
+                loginView.classList.remove('hidden');
+
+                // Bug 15 & 18 Fix
+                if (previousAuthState === true) {
+                    loginHeading.focus();
+                    srAnnouncer.textContent = "Successfully signed out.";
+                }
+                previousAuthState = false;
             }
         });
 
-        // Login Handler
+        // Login Flow
         loginBtn.addEventListener('click', async () => {
-            errorMessage.style.display = 'none';
+            loginError.classList.add('hidden');
+            loginError.textContent = '';
+
+            // Bug 8 Fix: Offline user check before making network requests
+            if (!navigator.onLine) {
+                loginError.textContent = "You appear to be offline. Please check your connection.";
+                loginError.classList.remove('hidden');
+                return;
+            }
+
             loginBtn.disabled = true;
-            loginSpinner.style.display = 'block';
+            loginSpinner.classList.remove('hidden');
 
             try {
                 await signInWithPopup(auth, provider);
-                // Note: UI update is handled automatically by onAuthStateChanged
             } catch (error) {
                 console.error("Login Error:", error);
-                // Handle user closing popup gracefully
-                if (error.code !== 'auth/popup-closed-by-user') {
-                    errorMessage.textContent = "Failed to sign in. Please try again.";
-                    errorMessage.style.display = 'block';
+                
+                // Bug 4 & 11 Fix: Ignore harmless overlapping requests or user cancellations
+                const ignoredErrors =[
+                    'auth/popup-closed-by-user',
+                    'auth/cancelled-popup-request'
+                ];
+
+                if (!ignoredErrors.includes(error.code)) {
+                    let errorMessage = "Failed to sign in. Please try again.";
+                    
+                    // Specific handling for network failures
+                    if (error.code === 'auth/network-request-failed') {
+                        errorMessage = "Network error. Please check your internet connection.";
+                    }
+                    
+                    loginError.textContent = errorMessage;
+                    loginError.classList.remove('hidden');
                 }
             } finally {
                 loginBtn.disabled = false;
-                loginSpinner.style.display = 'none';
+                loginSpinner.classList.add('hidden');
             }
         });
 
-        // Logout Handler
+        // Logout Flow
         logoutBtn.addEventListener('click', async () => {
+            logoutError.classList.add('hidden');
+            logoutError.textContent = '';
+            
             logoutBtn.disabled = true;
-            logoutSpinner.style.display = 'block';
+            logoutSpinner.classList.remove('hidden');
 
             try {
                 await signOut(auth);
-                // UI update handled by onAuthStateChanged
             } catch (error) {
                 console.error("Logout Error:", error);
-                alert("Failed to log out. Please check your connection.");
+                // Bug 7 Fix: Clean UI error instead of an intrusive window.alert()
+                logoutError.textContent = "Failed to log out safely. Please check your connection.";
+                logoutError.classList.remove('hidden');
             } finally {
                 logoutBtn.disabled = false;
-                logoutSpinner.style.display = 'none';
+                logoutSpinner.classList.add('hidden');
             }
         });
     </script>
