@@ -526,7 +526,7 @@
         returning_user: (name) => `Signed in as ${name}.`,
         http_warning:   'You are on an insecure connection.',
         http_link_text: 'Switch to HTTPS',
-        http_link_href: () => 'https://' + location.host + location.pathname + location.search,
+        http_link_href: () => 'https://' + location.host + location.pathname + location.search + location.hash,
       },
       ar: {
         sign_in_aria:   'تسجيل الدخول بواسطة Google',
@@ -549,7 +549,7 @@
         returning_user: (name) => `أنت مسجّل الدخول باسم ${name}.`,
         http_warning:   'أنت على اتصال غير آمن.',
         http_link_text: 'التبديل إلى HTTPS',
-        http_link_href: () => 'https://' + location.host + location.pathname + location.search,
+        http_link_href: () => 'https://' + location.host + location.pathname + location.search + location.hash,
       },
       he: {
         sign_in_aria:   'התחבר עם Google',
@@ -572,7 +572,7 @@
         returning_user: (name) => `מחובר כ-${name}.`,
         http_warning:   'אתה על חיבור לא מאובטח.',
         http_link_text: 'עבור ל-HTTPS',
-        http_link_href: () => 'https://' + location.host + location.pathname + location.search,
+        http_link_href: () => 'https://' + location.host + location.pathname + location.search + location.hash,
       },
       fa: {
         sign_in_aria:   'ورود با Google',
@@ -595,7 +595,7 @@
         returning_user: (name) => `وارد شده به عنوان ${name}.`,
         http_warning:   'اتصال ناامن.',
         http_link_text: 'رفتن به HTTPS',
-        http_link_href: () => 'https://' + location.host + location.pathname + location.search,
+        http_link_href: () => 'https://' + location.host + location.pathname + location.search + location.hash,
       },
       ur: {
         sign_in_aria:   'Google سے سائن ان کریں',
@@ -618,7 +618,7 @@
         returning_user: (name) => `${name} کے طور پر لاگ ان ہیں۔`,
         http_warning:   'غیر محفوظ کنیکشن۔',
         http_link_text: 'HTTPS پر جائیں',
-        http_link_href: () => 'https://' + location.host + location.pathname + location.search,
+        http_link_href: () => 'https://' + location.host + location.pathname + location.search + location.hash,
       },
     };
     // RTL language codes (full list)
@@ -654,14 +654,15 @@
       safeSetText('email-label', t.logged_in_as);     // Fix Bug 11
       const btnSignin = document.getElementById('btn-signin');
       if (btnSignin) {
-        btnSignin.textContent = '';
+        // Bug 2 fix: capture the SVG BEFORE wiping textContent,
+        // otherwise querySelector returns null and the icon is lost forever.
         const svg = btnSignin.querySelector('svg');
+        btnSignin.textContent = '';
         if (svg) btnSignin.appendChild(svg);
         const span = document.createElement('span');
-        span.textContent = t.sign_in_aria.replace('Sign in with ', '').replace('تسجيل الدخول بواسطة ', '');
-        span.textContent = resolved === 'en' ? 'Sign in with Google' : t.sign_in_aria;
+        span.textContent = t.sign_in_aria;
         btnSignin.appendChild(span);
-        btnSignin.setAttribute('aria-label', t.sign_in_aria);   // Fix Bug 4 (aria)
+        btnSignin.setAttribute('aria-label', t.sign_in_aria);
       }
       const btnSignout = document.getElementById('btn-signout');
       if (btnSignout) btnSignout.textContent = t.sign_out;
@@ -834,6 +835,18 @@
 
     const AUTH_TIMEOUT_MS = 10000;
 
+    /**
+     * Returns a Promise that rejects with { code: 'TIMEOUT' } after ms milliseconds.
+     * Used with Promise.race() so the rejection properly enters the async/await
+     * catch block — unlike setTimeout(()=>{ throw }, ms) which escapes to global scope.
+     * Bug 1 fix.
+     */
+    function rejectAfter(ms) {
+      return new Promise((_, reject) =>
+        setTimeout(() => reject({ code: 'TIMEOUT' }), ms)
+      );
+    }
+
     /* ─────────────────────────────────────────────────────────
      * SECTION 6 — APPLICATION BOOTSTRAP
      * ───────────────────────────────────────────────────────── */
@@ -859,17 +872,32 @@
         return;
       }
 
-      /* 4. Check the compat SDK loaded correctly via <script> tags */
-      if (typeof firebase === 'undefined' || !firebase.app) {
+      /* 4. Check the compat SDK loaded correctly via <script> tags.
+            Race against a timeout so a stalled CDN never hangs forever. */
+      try {
+        await Promise.race([
+          // Resolves immediately if firebase is already on window (normal case)
+          // or rejects via the timeout if the SDK scripts never executed.
+          new Promise((resolve, reject) => {
+            if (typeof firebase !== 'undefined' && firebase.app) {
+              resolve();
+            } else {
+              reject({ code: 'CDN_MISSING' });
+            }
+          }),
+          rejectAfter(AUTH_TIMEOUT_MS),
+        ]);
+      } catch (err) {
         if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
         showView(dom, 'view-login');
-        showStatus(dom, 'login', t.cdn_error, 'error', true);
+        const msg = err.code === 'TIMEOUT' ? t.timeout_error : t.cdn_error;
+        showStatus(dom, 'login', msg, 'error', true);
         mountRetryButton(dom, () => {
           teardownRetryButton();
           clearStatus(dom, 'login');
           window.location.reload();
         });
-        announce(t.cdn_error);
+        announce(msg);
         return;
       }
 
@@ -957,6 +985,11 @@
           signinInProgress = false;
           requestAnimationFrame(() => { const h = dom['dash-heading']; if (h) h.focus(); });
         } else {
+          // Bug 3 fix: always re-enable the sign-in button when returning to the
+          // login view — covers both normal logout and post-successful-login nav.
+          const btnSignin = dom['btn-signin'];
+          if (btnSignin) btnSignin.disabled = false;
+          signinInProgress = false;
           showView(dom, 'view-login');
           requestAnimationFrame(() => { const h = document.getElementById('login-heading'); if (h) h.focus(); });
         }
@@ -1031,8 +1064,8 @@
       const rawName  = (user.displayName || '').trim();
       const safeName = rawName || user.email?.split('@')[0] || 'User';
 
-      // Welcome text
-      safeSetText('dash-heading', isReturn ? t.welcome_back(safeName) : t.welcome_back(safeName));
+      // Welcome text — isReturn = user was already signed in on page load
+      safeSetText('dash-heading', isReturn ? t.returning_user(safeName) : t.welcome_back(safeName));
       safeSetText('user-email', user.email || '');
       safeSetText('email-label', t.logged_in_as);   // Fix Bug 11
 
