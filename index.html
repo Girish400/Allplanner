@@ -1,255 +1,1105 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Camp Planner Login</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PlanAway — Camp · RV · Trips · Picnics</title>
+  <meta name="description" content="Plan your next adventure — camping, RV trips, road trips, or picnics." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── DESIGN TOKENS ─────────────────────────────────── */
+    :root {
+      --forest:   #1a3a2a;
+      --moss:     #2e5c3e;
+      --sage:     #7ab38a;
+      --cream:    #f5f0e8;
+      --amber:    #d4822a;
+      --ember:    #c0603a;
+      --sky:      #4a7fa5;
+      --dusk:     #e8ddd0;
+      --error:    #b33a2a;
+      --success:  #2a6b3a;
+      --text-pri: #1a2518;
+      --text-sec: #4a5a44;
+      --radius:   14px;
+      --shadow-md: 0 6px 32px rgba(26,58,42,0.13);
+      --shadow-lg: 0 16px 60px rgba(26,58,42,0.18);
+      --transition: 0.28s cubic-bezier(0.4,0,0.2,1);
+    }
 
-<style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #0f172a;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100dvh;
-}
+    /* ── RESET ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--text-pri);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
 
-.container {
-  background: #1e293b;
-  padding: 2rem;
-  border-radius: 12px;
-  width: 320px;
-  text-align: center;
-}
+    /* ── BACKGROUND SCENERY ─────────────────────────────── */
+    .bg-scene {
+      position: fixed; inset: 0; z-index: 0; overflow: hidden;
+      background: linear-gradient(160deg, #d8eed8 0%, #c5e0d0 30%, #e8ddd0 65%, #f5f0e8 100%);
+    }
+    .bg-scene::before {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 45%;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%231a3a2a' fill-opacity='0.12' d='M0,160L48,144C96,128,192,96,288,106.7C384,117,480,171,576,181.3C672,192,768,160,864,138.7C960,117,1056,107,1152,112C1248,117,1344,139,1392,149.3L1440,160L1440,320L0,320Z'%3E%3C/path%3E%3C%2Fsvg%3E") no-repeat bottom/cover;
+    }
+    .bg-scene::after {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(122,179,138,0.22) 0%, transparent 70%);
+      top: -100px; right: -100px;
+      border-radius: 50%;
+    }
+    /* floating icons */
+    .floater {
+      position: absolute; opacity: 0.07; pointer-events: none;
+      animation: drift 18s ease-in-out infinite alternate;
+    }
+    .floater:nth-child(1) { font-size: 120px; top: 10%; left: 5%; animation-delay: 0s; }
+    .floater:nth-child(2) { font-size: 80px; top: 60%; right: 8%; animation-delay: -5s; }
+    .floater:nth-child(3) { font-size: 100px; bottom: 15%; left: 12%; animation-delay: -10s; }
+    .floater:nth-child(4) { font-size: 70px; top: 30%; right: 20%; animation-delay: -3s; }
+    @keyframes drift {
+      from { transform: translateY(0) rotate(-4deg); }
+      to   { transform: translateY(-30px) rotate(4deg); }
+    }
 
-button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-}
+    /* ── LAYOUT ─────────────────────────────────────────── */
+    #app {
+      position: relative; z-index: 1;
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
 
-.login-btn { background: #22c55e; }
-.logout-btn { background: #ef4444; }
-.retry-btn { background: #3b82f6; }
+    /* ── CARD SHELL ─────────────────────────────────────── */
+    .card {
+      background: rgba(255,252,246,0.92);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(122,179,138,0.25);
+      border-radius: 24px;
+      box-shadow: var(--shadow-lg);
+      width: 100%; max-width: 440px;
+      overflow: hidden;
+      animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(28px) scale(0.97); }
+      to   { opacity: 1; transform: none; }
+    }
 
-.hidden { display: none; }
+    /* ── CARD HEADER ────────────────────────────────────── */
+    .card-header {
+      background: linear-gradient(135deg, var(--forest) 0%, var(--moss) 100%);
+      padding: 36px 40px 32px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-header::after {
+      content: '';
+      position: absolute; bottom: -1px; left: 0; right: 0; height: 28px;
+      background: rgba(255,252,246,0.92);
+      border-radius: 24px 24px 0 0;
+    }
+    .logo-icon {
+      font-size: 48px; display: block; margin-bottom: 12px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+      animation: wiggle 3s ease-in-out infinite;
+    }
+    @keyframes wiggle {
+      0%,100% { transform: rotate(-3deg); }
+      50%      { transform: rotate(3deg); }
+    }
+    .brand-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem; font-weight: 700;
+      color: var(--cream); letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .brand-tagline {
+      font-size: 0.78rem; color: rgba(245,240,232,0.65);
+      letter-spacing: 0.12em; text-transform: uppercase;
+      margin-top: 6px;
+    }
 
-#error {
-  margin-top: 10px;
-  color: #f87171;
-}
+    /* ── CARD BODY ──────────────────────────────────────── */
+    .card-body { padding: 36px 40px 40px; }
 
-</style>
+    /* ── VIEWS ──────────────────────────────────────────── */
+    .view { display: none; }
+    .view.active { display: block; animation: fadeUp 0.35s ease both; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* ── LOGIN VIEW ─────────────────────────────────────── */
+    #view-login .headline {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.45rem; font-weight: 700;
+      color: var(--forest); margin-bottom: 6px;
+    }
+    #view-login .subline {
+      font-size: 0.875rem; color: var(--text-sec);
+      margin-bottom: 28px; line-height: 1.5;
+    }
+    .adventure-chips {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px;
+    }
+    .chip {
+      background: rgba(122,179,138,0.15);
+      border: 1px solid rgba(122,179,138,0.3);
+      border-radius: 20px; padding: 4px 14px;
+      font-size: 0.78rem; color: var(--moss);
+      font-weight: 500; white-space: nowrap;
+    }
+
+    /* ── BUTTONS ────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 10px; cursor: pointer;
+      border: none; border-radius: var(--radius);
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      transition: var(--transition); position: relative;
+      user-select: none; -webkit-user-select: none;
+      white-space: nowrap;
+    }
+    .btn:focus-visible {
+      outline: 3px solid var(--amber); outline-offset: 3px;
+    }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; pointer-events: none; }
+    .btn-google {
+      width: 100%; padding: 14px 20px;
+      background: #fff; color: #3c4043;
+      border: 1.5px solid #dadce0;
+      font-size: 0.9375rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .btn-google:hover:not(:disabled) {
+      background: #f8fbff; border-color: var(--sky);
+      box-shadow: 0 4px 16px rgba(74,127,165,0.15);
+      transform: translateY(-1px);
+    }
+    .btn-google:active:not(:disabled) { transform: translateY(0); }
+    .google-icon { width: 20px; height: 20px; flex-shrink: 0; }
+    .btn-secondary {
+      padding: 10px 20px; font-size: 0.875rem;
+      background: transparent; color: var(--forest);
+      border: 1.5px solid var(--sage);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(122,179,138,0.12);
+    }
+    .btn-sign-out {
+      padding: 10px 22px; font-size: 0.875rem;
+      background: rgba(192,96,58,0.1); color: var(--ember);
+      border: 1.5px solid rgba(192,96,58,0.25);
+    }
+    .btn-sign-out:hover:not(:disabled) {
+      background: rgba(192,96,58,0.18);
+    }
+
+    /* ── LOADING SPINNER ────────────────────────────────── */
+    .spinner-wrap {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 14px; padding: 16px 0;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(122,179,138,0.2);
+      border-top-color: var(--moss);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-text {
+      font-size: 0.875rem; color: var(--text-sec);
+    }
+
+    /* ── ERROR / STATUS BOX ─────────────────────────────── */
+    .status-box {
+      border-radius: 10px; padding: 14px 16px;
+      font-size: 0.875rem; line-height: 1.5;
+      margin-top: 18px; display: none;
+    }
+    .status-box.error {
+      background: rgba(179,58,42,0.08);
+      border: 1px solid rgba(179,58,42,0.25);
+      color: var(--error);
+    }
+    .status-box.info {
+      background: rgba(74,127,165,0.08);
+      border: 1px solid rgba(74,127,165,0.2);
+      color: var(--sky);
+    }
+    .status-box.visible { display: block; }
+    .status-box .retry-row {
+      margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;
+    }
+
+    /* ── DASHBOARD VIEW ─────────────────────────────────── */
+    #view-dashboard .welcome-head {
+      display: flex; align-items: center; gap: 14px; margin-bottom: 24px;
+    }
+    .avatar-wrap { position: relative; flex-shrink: 0; }
+    .avatar {
+      width: 60px; height: 60px; border-radius: 50%;
+      border: 3px solid var(--sage);
+      object-fit: cover; display: block;
+    }
+    .avatar-fallback {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--moss), var(--sage));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #fff; font-weight: 700;
+      flex-shrink: 0; display: none;
+    }
+    .welcome-text .name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem; font-weight: 700;
+      color: var(--forest); line-height: 1.2;
+    }
+    .welcome-text .email {
+      font-size: 0.8rem; color: var(--text-sec); margin-top: 2px;
+    }
+    .welcome-text .email-label {
+      font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--sage); font-weight: 500;
+    }
+
+    .plan-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin-bottom: 24px;
+    }
+    .plan-card {
+      background: linear-gradient(135deg, var(--forest) 0%, var(--moss) 100%);
+      border-radius: 14px; padding: 18px 16px;
+      cursor: pointer; transition: var(--transition);
+      text-decoration: none; display: block;
+      border: 1.5px solid transparent;
+    }
+    .plan-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--sage);
+    }
+    .plan-card:focus-visible {
+      outline: 3px solid var(--amber); outline-offset: 2px;
+    }
+    .plan-card .icon { font-size: 1.8rem; display: block; margin-bottom: 8px; }
+    .plan-card .label {
+      font-size: 0.875rem; font-weight: 500;
+      color: var(--cream); opacity: 0.9;
+    }
+    .plan-card:nth-child(2) { background: linear-gradient(135deg, #2a4a6a, var(--sky)); }
+    .plan-card:nth-child(3) { background: linear-gradient(135deg, #5a3a1a, var(--amber)); }
+    .plan-card:nth-child(4) { background: linear-gradient(135deg, #2a5a3a, #4a9a5a); }
+
+    .dash-footer {
+      display: flex; justify-content: flex-end; padding-top: 4px;
+    }
+
+    /* ── SR LIVE REGION ─────────────────────────────────── */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* ── OFFLINE BANNER ─────────────────────────────────── */
+    #offline-banner {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: var(--ember); color: #fff;
+      text-align: center; padding: 10px 20px;
+      font-size: 0.875rem; font-weight: 500;
+      transform: translateY(-100%);
+      transition: transform 0.3s ease;
+    }
+    #offline-banner.visible { transform: translateY(0); }
+
+    /* ── INITIAL LOADER ─────────────────────────────────── */
+    #initial-loader {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 12px; padding: 20px;
+    }
+
+    /* ── RTL SUPPORT ────────────────────────────────────── */
+    [dir="rtl"] .plan-grid { direction: rtl; }
+    [dir="rtl"] .welcome-head { flex-direction: row-reverse; }
+    [dir="rtl"] .welcome-text { text-align: right; }
+    [dir="rtl"] .adventure-chips { flex-direction: row-reverse; }
+    [dir="rtl"] .dash-footer { justify-content: flex-start; }
+    [dir="rtl"] .status-box { text-align: right; }
+    [dir="rtl"] .retry-row { flex-direction: row-reverse; }
+
+    /* border direction fix */
+    .status-box { border-inline-start: 4px solid transparent; }
+    .status-box.error { border-inline-start-color: var(--error); }
+    .status-box.info  { border-inline-start-color: var(--sky); }
+
+    /* ── RESPONSIVE ─────────────────────────────────────── */
+    @media (max-width: 480px) {
+      .card-header { padding: 28px 28px 24px; }
+      .card-body   { padding: 28px 24px 32px; }
+      .plan-grid   { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 360px) {
+      .plan-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 
 <body>
-<div class="container">
+  <!-- offline banner -->
+  <div id="offline-banner" role="alert" aria-live="assertive"></div>
 
-  <h2 id="title">Camp Planner</h2>
-
-  <!-- LOGIN -->
-  <div id="loginView">
-    <button id="loginBtn" class="login-btn">Continue with Google</button>
+  <!-- background -->
+  <div class="bg-scene" aria-hidden="true">
+    <span class="floater">⛺</span>
+    <span class="floater">🚐</span>
+    <span class="floater">🏕️</span>
+    <span class="floater">🧺</span>
   </div>
 
-  <!-- DASHBOARD -->
-  <div id="dashboardView" class="hidden">
-    <p id="welcome"></p>
-    <button id="logoutBtn" class="logout-btn">Logout</button>
-  </div>
+  <!-- sr live region -->
+  <div id="sr-live" aria-live="polite" aria-atomic="true" class="sr-only"></div>
 
-  <button id="retryBtn" class="retry-btn hidden">Retry</button>
-  <div id="error" role="alert" aria-live="assertive"></div>
-  <div id="sr" aria-live="polite" style="position:absolute;left:-9999px;"></div>
+  <!-- app root -->
+  <main id="app" role="main">
+    <div class="card" role="region" aria-label="PlanAway Application">
 
-</div>
+      <!-- header -->
+      <div class="card-header" aria-hidden="true">
+        <span class="logo-icon">🏕️</span>
+        <div class="brand-name">PlanAway</div>
+        <div class="brand-tagline">Camp · RV · Trips · Picnics</div>
+      </div>
 
-<script type="module">
-import {
-  initializeApp
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+      <!-- body -->
+      <div class="card-body">
 
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  setPersistence,
-  browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        <!-- initial loader -->
+        <div id="initial-loader" aria-label="Checking sign-in status" role="status">
+          <div class="spinner" aria-hidden="true"></div>
+          <span class="spinner-text">Getting things ready…</span>
+        </div>
 
-/* ================= CONFIG ================= */
-const firebaseConfig = {
-  apiKey: "AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc",
-  authDomain: "camp-cbf1d.firebaseapp.com",
-  projectId: "camp-cbf1d",
-  storageBucket: "camp-cbf1d.firebasestorage.app",
-  messagingSenderId: "879899618290",
-  appId: "1:879899618290:web:c71c1626e5a5fa0a96596b"
-};
+        <!-- LOGIN VIEW -->
+        <section id="view-login" class="view" aria-labelledby="login-heading">
+          <h1 id="login-heading" class="headline" tabindex="-1">Welcome, Adventurer</h1>
+          <p class="subline">Sign in to plan your next great escape.</p>
 
-/* ================= DOM ================= */
-const DOM = {
-  loginBtn: document.getElementById("loginBtn"),
-  logoutBtn: document.getElementById("logoutBtn"),
-  retryBtn: document.getElementById("retryBtn"),
-  loginView: document.getElementById("loginView"),
-  dashboardView: document.getElementById("dashboardView"),
-  welcome: document.getElementById("welcome"),
-  error: document.getElementById("error"),
-  sr: document.getElementById("sr")
-};
+          <div class="adventure-chips" aria-label="Plan types">
+            <span class="chip">⛺ Camping</span>
+            <span class="chip">🚐 RV Trip</span>
+            <span class="chip">🗺️ Road Trip</span>
+            <span class="chip">🧺 Picnic</span>
+          </div>
 
-/* ================= STATE ================= */
-let auth;
-let unsubscribe = null;
-let initRunning = false;
-let authResolved = false;
-let timeoutRef = null;
+          <button
+            id="btn-signin"
+            class="btn btn-google"
+            type="button"
+            aria-label="Sign in with Google"
+            data-i18n-aria="sign_in_aria"
+          >
+            <svg class="google-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Sign in with Google
+          </button>
 
-/* ================= UTIL ================= */
+          <div id="login-status" class="status-box" role="alert" aria-live="assertive" aria-atomic="true">
+            <span id="login-status-msg"></span>
+            <div class="retry-row" id="login-retry-row" style="display:none"></div>
+          </div>
+        </section>
 
-function announce(msg) {
-  DOM.sr.textContent = "";
-  setTimeout(() => DOM.sr.textContent = msg, 100);
-}
+        <!-- DASHBOARD VIEW -->
+        <section id="view-dashboard" class="view" aria-labelledby="dash-heading">
+          <div class="welcome-head">
+            <div class="avatar-wrap">
+              <img id="user-avatar" class="avatar" src="" alt="" aria-hidden="true" />
+              <div id="user-avatar-fallback" class="avatar-fallback" aria-hidden="true"></div>
+            </div>
+            <div class="welcome-text">
+              <h1 id="dash-heading" class="name" tabindex="-1"></h1>
+              <div class="email-label" id="email-label">Logged in as</div>
+              <div class="email" id="user-email"></div>
+            </div>
+          </div>
 
-function showError(msg) {
-  DOM.error.textContent = msg;
-}
+          <nav class="plan-grid" aria-label="Planning categories">
+            <a href="#" class="plan-card" role="button" aria-label="Plan a camping trip">
+              <span class="icon" aria-hidden="true">⛺</span>
+              <span class="label">Camping</span>
+            </a>
+            <a href="#" class="plan-card" role="button" aria-label="Plan an RV trip">
+              <span class="icon" aria-hidden="true">🚐</span>
+              <span class="label">RV Trip</span>
+            </a>
+            <a href="#" class="plan-card" role="button" aria-label="Plan a road trip">
+              <span class="icon" aria-hidden="true">🗺️</span>
+              <span class="label">Road Trip</span>
+            </a>
+            <a href="#" class="plan-card" role="button" aria-label="Plan a picnic">
+              <span class="icon" aria-hidden="true">🧺</span>
+              <span class="label">Picnic</span>
+            </a>
+          </nav>
 
-function clearError() {
-  DOM.error.textContent = "";
-}
+          <div class="dash-footer">
+            <button
+              id="btn-signout"
+              class="btn btn-sign-out"
+              type="button"
+              aria-label="Sign out of PlanAway"
+            >
+              Sign Out
+            </button>
+          </div>
 
-function toggleLoading(disabled) {
-  DOM.loginBtn.disabled = disabled;
-  DOM.logoutBtn.disabled = disabled;
-}
+          <div id="dash-status" class="status-box" role="alert" aria-live="assertive" aria-atomic="true">
+            <span id="dash-status-msg"></span>
+          </div>
+        </section>
 
-function showLogin() {
-  DOM.loginView.classList.remove("hidden");
-  DOM.dashboardView.classList.add("hidden");
-}
+      </div><!-- /card-body -->
+    </div><!-- /card -->
+  </main>
 
-function showDashboard(user) {
-  DOM.loginView.classList.add("hidden");
-  DOM.dashboardView.classList.remove("hidden");
-
-  DOM.welcome.textContent =
-    "Welcome " + (user.displayName || user.email);
-}
-
-/* ================= INIT ================= */
-
-async function initApp() {
-  if (initRunning) return;
-  initRunning = true;
-
-  clearError();
-  DOM.retryBtn.classList.add("hidden");
-
-  try {
-    if (!navigator.onLine) {
-      throw new Error("You are offline");
-    }
-
-    const app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-
-    // CRITICAL FIX: persistence BEFORE listener
-    await setPersistence(auth, browserLocalPersistence);
-
-    const provider = new GoogleAuthProvider();
-
-    // CLEAN previous listener
-    if (unsubscribe) {
-      unsubscribe();
-      unsubscribe = null;
-    }
-
-    authResolved = false;
-
-    // TIMEOUT protection
-    timeoutRef = setTimeout(() => {
-      if (!authResolved) {
-        showError("Auth timeout. Check connection.");
-        DOM.retryBtn.classList.remove("hidden");
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- APPLICATION SCRIPT                                       -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <script type="module">
+    /* ─────────────────────────────────────────────────────────
+     * SECTION 0 — HTTPS ENFORCEMENT
+     * Fix: Bug 2 — replaced window.location.protocol assignment
+     * (unreliable) with a standards-compliant navigation call.
+     * ───────────────────────────────────────────────────────── */
+    (function enforceHTTPS() {
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        const httpsURL = 'https://' + location.host + location.pathname + location.search + location.hash;
+        // Use location.replace so it doesn't pollute history
+        try { location.replace(httpsURL); } catch (_) { /* silently ignore on local dev */ }
       }
-    }, 8000);
+    })();
 
-    unsubscribe = onAuthStateChanged(auth, (user) => {
-      authResolved = true;
-      clearTimeout(timeoutRef);
+    /* ─────────────────────────────────────────────────────────
+     * SECTION 1 — INTERNATIONALISATION (i18n)
+     * Fix: Bugs 4, 5, 6, 7, 11 — all UI strings localised;
+     * lang set AFTER fallback is resolved; full BCP-47 subtag kept.
+     * ───────────────────────────────────────────────────────── */
+    const TRANSLATIONS = {
+      en: {
+        sign_in_aria:   'Sign in with Google',
+        login_heading:  'Welcome, Adventurer',
+        login_subline:  'Sign in to plan your next great escape.',
+        logged_in_as:   'Logged in as',
+        sign_out:       'Sign Out',
+        loading:        'Getting things ready…',
+        offline:        '⚡ You are offline. Please reconnect to sign in.',
+        timeout_error:  'Sign-in is taking too long. Please try again.',
+        cdn_error:      'Could not load required scripts. Check your connection and retry.',
+        popup_blocked:  'Popup was blocked. Please allow popups and try again.',
+        auth_error:     'Sign-in failed. Please try again.',
+        logout_error:   'Sign-out failed. Please try again.',
+        retry:          'Retry',
+        welcome_back:   (name) => `Welcome back, ${name}!`,
+        signed_out:     'You have been signed out.',
+        signing_in:     'Signing in…',
+        signing_out:    'Signing out…',
+        returning_user: (name) => `Signed in as ${name}.`,
+        http_warning:   'You are on an insecure connection.',
+        http_link_text: 'Switch to HTTPS',
+        http_link_href: () => 'https://' + location.host + location.pathname + location.search,
+      },
+      ar: {
+        sign_in_aria:   'تسجيل الدخول بواسطة Google',
+        login_heading:  'مرحباً أيها المغامر',
+        login_subline:  'سجّل دخولك للتخطيط لمغامرتك القادمة.',
+        logged_in_as:   'تم تسجيل الدخول بواسطة',
+        sign_out:       'تسجيل الخروج',
+        loading:        'جارٍ التحضير…',
+        offline:        '⚡ أنت غير متصل. يرجى إعادة الاتصال.',
+        timeout_error:  'استغرق تسجيل الدخول وقتاً طويلاً. حاول مجدداً.',
+        cdn_error:      'تعذّر تحميل البرامج. تحقق من اتصالك وأعد المحاولة.',
+        popup_blocked:  'تم حظر النافذة المنبثقة. يُرجى السماح بها وإعادة المحاولة.',
+        auth_error:     'فشل تسجيل الدخول. يُرجى المحاولة مرة أخرى.',
+        logout_error:   'فشل تسجيل الخروج. يُرجى المحاولة مرة أخرى.',
+        retry:          'إعادة المحاولة',
+        welcome_back:   (name) => `مرحباً بعودتك، ${name}!`,
+        signed_out:     'تم تسجيل خروجك.',
+        signing_in:     'جارٍ تسجيل الدخول…',
+        signing_out:    'جارٍ تسجيل الخروج…',
+        returning_user: (name) => `أنت مسجّل الدخول باسم ${name}.`,
+        http_warning:   'أنت على اتصال غير آمن.',
+        http_link_text: 'التبديل إلى HTTPS',
+        http_link_href: () => 'https://' + location.host + location.pathname + location.search,
+      },
+      he: {
+        sign_in_aria:   'התחבר עם Google',
+        login_heading:  'ברוך הבא, הרפתקן',
+        login_subline:  'התחבר כדי לתכנן את ההרפתקה הבאה שלך.',
+        logged_in_as:   'מחובר בתור',
+        sign_out:       'התנתק',
+        loading:        'טוען…',
+        offline:        '⚡ אין חיבור לאינטרנט.',
+        timeout_error:  'ההתחברות נמשכת זמן רב מדי. נסה שוב.',
+        cdn_error:      'לא ניתן לטעון סקריפטים. בדוק את החיבור.',
+        popup_blocked:  'החלון הנקפץ נחסם. אפשר חלונות נקפצים ונסה שוב.',
+        auth_error:     'ההתחברות נכשלה. נסה שוב.',
+        logout_error:   'ההתנתקות נכשלה. נסה שוב.',
+        retry:          'נסה שוב',
+        welcome_back:   (name) => `ברוך שובך, ${name}!`,
+        signed_out:     'התנתקת בהצלחה.',
+        signing_in:     'מתחבר…',
+        signing_out:    'מתנתק…',
+        returning_user: (name) => `מחובר כ-${name}.`,
+        http_warning:   'אתה על חיבור לא מאובטח.',
+        http_link_text: 'עבור ל-HTTPS',
+        http_link_href: () => 'https://' + location.host + location.pathname + location.search,
+      },
+      fa: {
+        sign_in_aria:   'ورود با Google',
+        login_heading:  'خوش آمدید، ماجراجو',
+        login_subline:  'برای برنامه‌ریزی ماجراجویی بعدی وارد شوید.',
+        logged_in_as:   'وارد شده به عنوان',
+        sign_out:       'خروج',
+        loading:        'در حال آماده‌سازی…',
+        offline:        '⚡ اتصال اینترنت ندارید.',
+        timeout_error:  'ورود خیلی طول کشید. دوباره امتحان کنید.',
+        cdn_error:      'بارگیری اسکریپت‌ها ناموفق بود.',
+        popup_blocked:  'پاپ‌آپ مسدود شد. لطفاً اجازه دهید و دوباره امتحان کنید.',
+        auth_error:     'ورود ناموفق بود. دوباره امتحان کنید.',
+        logout_error:   'خروج ناموفق بود. دوباره امتحان کنید.',
+        retry:          'تلاش مجدد',
+        welcome_back:   (name) => `خوش برگشتی، ${name}!`,
+        signed_out:     'خارج شدید.',
+        signing_in:     'در حال ورود…',
+        signing_out:    'در حال خروج…',
+        returning_user: (name) => `وارد شده به عنوان ${name}.`,
+        http_warning:   'اتصال ناامن.',
+        http_link_text: 'رفتن به HTTPS',
+        http_link_href: () => 'https://' + location.host + location.pathname + location.search,
+      },
+      ur: {
+        sign_in_aria:   'Google سے سائن ان کریں',
+        login_heading:  'خوش آمدید، مہم جو',
+        login_subline:  'اگلی مہم کی منصوبہ بندی کے لیے سائن ان کریں۔',
+        logged_in_as:   'لاگ ان بطور',
+        sign_out:       'سائن آؤٹ',
+        loading:        'تیاری جاری ہے…',
+        offline:        '⚡ آپ آف لائن ہیں۔',
+        timeout_error:  'سائن ان میں بہت وقت لگ رہا ہے۔ دوبارہ کوشش کریں۔',
+        cdn_error:      'اسکرپٹ لوڈ نہیں ہو سکے۔',
+        popup_blocked:  'پاپ اپ بلاک ہو گیا۔ اجازت دیں اور دوبارہ کوشش کریں۔',
+        auth_error:     'سائن ان ناکام ہوا۔ دوبارہ کوشش کریں۔',
+        logout_error:   'سائن آؤٹ ناکام ہوا۔ دوبارہ کوشش کریں۔',
+        retry:          'دوبارہ کوشش',
+        welcome_back:   (name) => `خوش آمدید واپس، ${name}!`,
+        signed_out:     'آپ سائن آؤٹ ہو گئے۔',
+        signing_in:     'سائن ان ہو رہا ہے…',
+        signing_out:    'سائن آؤٹ ہو رہا ہے…',
+        returning_user: (name) => `${name} کے طور پر لاگ ان ہیں۔`,
+        http_warning:   'غیر محفوظ کنیکشن۔',
+        http_link_text: 'HTTPS پر جائیں',
+        http_link_href: () => 'https://' + location.host + location.pathname + location.search,
+      },
+    };
+    // RTL language codes (full list)
+    const RTL_LANGS = new Set(['ar','he','fa','ur','yi','dv','ps','sd','ckb']);
 
-      if (user) {
-        showDashboard(user);
-        announce("Logged in");
+    /**
+     * Detect browser language. Returns base code and full BCP-47 tag.
+     * Fix Bug 5: we keep the FULL subtag (e.g. 'ar-SA') for document.lang
+     *            but fall back by base code for translation lookup.
+     */
+    function detectLang() {
+      const full = navigator.language || navigator.languages?.[0] || 'en';
+      const base = full.split('-')[0].toLowerCase();
+      return { full, base };
+    }
+
+    let t = TRANSLATIONS.en;   // active translations
+    let langFull = 'en';        // for document.lang
+
+    function applyTranslations(base, full) {
+      // Fix Bug 7: resolve fallback FIRST, then set document.lang
+      const resolved = TRANSLATIONS[base] ? base : 'en';
+      t = TRANSLATIONS[resolved];
+      // Fix Bug 5: use full BCP-47 tag
+      langFull = TRANSLATIONS[base] ? full : 'en';
+      document.documentElement.lang = langFull;
+      // Fix Bug 6: RTL for all 9 RTL langs (not just Arabic)
+      document.documentElement.dir = RTL_LANGS.has(base) ? 'rtl' : 'ltr';
+      // Apply static translated strings
+      safeSetText('login-heading', t.login_heading);
+      const subline = document.querySelector('#view-login .subline');
+      if (subline) subline.textContent = t.login_subline;
+      safeSetText('email-label', t.logged_in_as);     // Fix Bug 11
+      const btnSignin = document.getElementById('btn-signin');
+      if (btnSignin) {
+        btnSignin.textContent = '';
+        const svg = btnSignin.querySelector('svg');
+        if (svg) btnSignin.appendChild(svg);
+        const span = document.createElement('span');
+        span.textContent = t.sign_in_aria.replace('Sign in with ', '').replace('تسجيل الدخول بواسطة ', '');
+        span.textContent = resolved === 'en' ? 'Sign in with Google' : t.sign_in_aria;
+        btnSignin.appendChild(span);
+        btnSignin.setAttribute('aria-label', t.sign_in_aria);   // Fix Bug 4 (aria)
+      }
+      const btnSignout = document.getElementById('btn-signout');
+      if (btnSignout) btnSignout.textContent = t.sign_out;
+    }
+
+    /* ─────────────────────────────────────────────────────────
+     * SECTION 2 — DOM HELPERS (NO innerHTML)
+     * Fix: Bug 1 — all user content set via textContent / DOM API
+     * ───────────────────────────────────────────────────────── */
+    function safeSetText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text ?? '';
+    }
+
+    /**
+     * DOM extraction with graceful per-element failure.
+     * Fix Bug 8: missing DOM element does NOT crash the app;
+     * returns an object where missing elements are null, caller decides.
+     */
+    function extractDOM() {
+      const ids = [
+        'initial-loader','view-login','view-dashboard',
+        'btn-signin','btn-signout',
+        'login-status','login-status-msg','login-retry-row',
+        'dash-status','dash-status-msg',
+        'user-avatar','user-avatar-fallback',
+        'user-email','dash-heading',
+        'offline-banner','sr-live',
+      ];
+      const dom = {};
+      const missing = [];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        dom[id] = el;
+        if (!el) missing.push(id);
+      }
+      if (missing.length) {
+        console.warn('[PlanAway] Missing DOM elements:', missing);
+        // Non-fatal: continue with partial DOM
+      }
+      return dom;
+    }
+
+    /* Announce to screen readers — Fix Bug 4 */
+    function announce(msg) {
+      const el = document.getElementById('sr-live');
+      if (!el) return;
+      // Force re-announcement by briefly clearing
+      el.textContent = '';
+      requestAnimationFrame(() => { el.textContent = msg; });
+    }
+
+    /* Show / hide view sections — no innerHTML */
+    function showView(dom, viewId) {
+      ['view-login','view-dashboard'].forEach(id => {
+        const el = dom[id];
+        if (!el) return;
+        el.classList.toggle('active', el.id === viewId);
+      });
+    }
+
+    /* Show status box (error / info) — textContent only, no innerHTML */
+    function showStatus(dom, area, msg, type = 'error', showRetry = false) {
+      // area: 'login' | 'dash'
+      const box  = dom[`${area}-status`];
+      const msgEl = dom[`${area}-status-msg`];
+      if (!box || !msgEl) return;
+      msgEl.textContent = msg;
+      box.className = `status-box ${type} visible`;
+      // Fix Bug 1: HTTPS link built with DOM API — no innerHTML
+      if (area === 'login') {
+        const retryRow = dom['login-retry-row'];
+        if (retryRow) retryRow.style.display = showRetry ? 'flex' : 'none';
+      }
+    }
+
+    function clearStatus(dom, area) {
+      const box  = dom[`${area}-status`];
+      const msgEl = dom[`${area}-status-msg`];
+      if (!box || !msgEl) return;
+      msgEl.textContent = '';
+      box.className = 'status-box';
+      if (area === 'login') {
+        const retryRow = dom['login-retry-row'];
+        if (retryRow) retryRow.style.display = 'none';
+      }
+    }
+
+    /* Build HTTPS warning message with a real <a> element (no innerHTML) */
+    function buildHTTPSMessage(dom) {
+      const msgEl = dom['login-status-msg'];
+      const box   = dom['login-status'];
+      if (!msgEl || !box) return;
+      msgEl.textContent = '';
+      const text = document.createTextNode(t.http_warning + ' ');
+      const link = document.createElement('a');
+      link.href = t.http_link_href();
+      link.textContent = t.http_link_text;
+      link.style.cssText = 'color:inherit;font-weight:600;text-decoration:underline';
+      // Fix Bug 2: use anchor click navigation, not protocol assignment
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = t.http_link_href();
+      });
+      msgEl.appendChild(text);
+      msgEl.appendChild(link);
+      box.className = 'status-box info visible';
+    }
+
+    /* ─────────────────────────────────────────────────────────
+     * SECTION 3 — OFFLINE DETECTION
+     * ───────────────────────────────────────────────────────── */
+    function updateOfflineBanner(dom, isOffline) {
+      const banner = dom['offline-banner'];
+      if (!banner) return;
+      if (isOffline) {
+        banner.textContent = t.offline;
+        banner.classList.add('visible');
       } else {
-        showLogin();
+        banner.classList.remove('visible');
+        banner.textContent = '';
       }
-    });
+    }
 
-    /* ===== HANDLERS ===== */
+    /* ─────────────────────────────────────────────────────────
+     * SECTION 4 — RETRY BUTTON MANAGEMENT
+     * Fix Bug 10: retry button listener NEVER stacks.
+     * We use a single AbortController per retry button lifecycle.
+     * ───────────────────────────────────────────────────────── */
+    let retryButtonController = null;
 
-    DOM.loginBtn.onclick = async () => {
-      clearError();
+    function mountRetryButton(dom, onRetry) {
+      const retryRow = dom['login-retry-row'];
+      if (!retryRow) return;
+      // Abort any previous retry listener
+      if (retryButtonController) { retryButtonController.abort(); retryButtonController = null; }
+      // Clear old buttons
+      retryRow.textContent = '';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-secondary';
+      btn.textContent = t.retry;
+      btn.setAttribute('aria-describedby', 'login-status-msg');
+      retryButtonController = new AbortController();
+      btn.addEventListener('click', onRetry, { signal: retryButtonController.signal });
+      retryRow.appendChild(btn);
+      retryRow.style.display = 'flex';
+      btn.focus();
+    }
 
-      if (!navigator.onLine) {
-        showError("You are offline");
+    function teardownRetryButton() {
+      if (retryButtonController) { retryButtonController.abort(); retryButtonController = null; }
+    }
+
+    /* ─────────────────────────────────────────────────────────
+     * SECTION 5 — FIREBASE LOADER & AUTH
+     * ───────────────────────────────────────────────────────── */
+    const FIREBASE_CONFIG = {
+      apiKey:            'AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc',
+      authDomain:        'camp-cbf1d.firebaseapp.com',
+      projectId:         'camp-cbf1d',
+      storageBucket:     'camp-cbf1d.firebasestorage.app',
+      messagingSenderId: '879899618290',
+      appId:             '1:879899618290:web:c71c1626e5a5fa0a96596b',
+      measurementId:     'G-9R2C1174BG',
+    };
+
+    const AUTH_TIMEOUT_MS = 10_000;
+
+    /* ─────────────────────────────────────────────────────────
+     * SECTION 6 — APPLICATION BOOTSTRAP
+     * Fix: Bugs 3,4,5,6,7,8,9,10,11 all addressed here
+     * ───────────────────────────────────────────────────────── */
+    async function bootstrap() {
+      /* 0. Detect language & apply translations FIRST */
+      const { full, base } = detectLang();
+      applyTranslations(base, full);
+
+      /* 1. Extract DOM — graceful, non-fatal for missing elements */
+      const dom = extractDOM();
+
+      /* 2. Offline detection setup */
+      const checkOffline = () => updateOfflineBanner(dom, !navigator.onLine);
+      window.addEventListener('online',  checkOffline);
+      window.addEventListener('offline', checkOffline);
+      checkOffline(); // initial check
+
+      /* 3. HTTP check — use DOM API, not innerHTML */
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
+        showView(dom, 'view-login');
+        buildHTTPSMessage(dom);
         return;
       }
 
-      toggleLoading(true);
-
+      /* 4. Load Firebase SDK dynamically (CDN failure handled) */
+      let firebaseApp, getAuth, signInWithPopup, GoogleAuthProvider, signOut, browserLocalPersistence, setPersistence, onAuthStateChanged;
+      let cdnLoadTimeout;
       try {
-        await signInWithPopup(auth, provider);
-      } catch (e) {
-        if (e.code === "auth/cancelled-popup-request") return;
-        showError("Login failed");
+        cdnLoadTimeout = setTimeout(() => {
+          throw new Error('CDN_TIMEOUT');
+        }, AUTH_TIMEOUT_MS);
+
+        const [appMod, authMod] = await Promise.all([
+          import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
+          import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js'),
+        ]);
+        clearTimeout(cdnLoadTimeout);
+
+        ({ initializeApp } = appMod);
+        ({ getAuth, signInWithPopup, GoogleAuthProvider, signOut, browserLocalPersistence, setPersistence, onAuthStateChanged } = authMod);
+
+        /* 5. Init Firebase — guard against re-init */
+        let app;
+        const { getApps, initializeApp } = appMod;
+        const existingApps = getApps();
+        app = existingApps.length > 0 ? existingApps[0] : initializeApp(FIREBASE_CONFIG);
+        const auth = getAuth(app);
+
+        /* 6. Set LOCAL persistence BEFORE first auth state check */
+        await setPersistence(auth, browserLocalPersistence);
+
+        /* 7. Boot the auth layer */
+        bootAuth({ dom, auth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged });
+
+      } catch (err) {
+        clearTimeout(cdnLoadTimeout);
+        if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
+        showView(dom, 'view-login');
+        const msg = err?.message === 'CDN_TIMEOUT' ? t.timeout_error : t.cdn_error;
+        showStatus(dom, 'login', msg, 'error', true);
+        mountRetryButton(dom, () => {
+          teardownRetryButton();
+          clearStatus(dom, 'login');
+          if (dom['initial-loader']) dom['initial-loader'].style.display = 'flex';
+          showView(dom, null);
+          // Reload the page cleanly (safest retry)
+          window.location.reload();
+        });
+        announce(msg);
+      }
+    }
+
+    /* ─────────────────────────────────────────────────────────
+     * AUTH LAYER
+     * Fix: Bug 9 — teardownApp namespaced to avoid collision;
+     *             using a Symbol-keyed property
+     * ───────────────────────────────────────────────────────── */
+    const TEARDOWN_KEY = Symbol.for('__planaway_teardown__');
+
+    function bootAuth({ dom, auth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }) {
+      /* Abort controller for all non-retry listeners */
+      const ac = new AbortController();
+      const { signal } = ac;
+
+      let authUnsubscribe = null;
+      let signinInProgress = false;
+      let signoutInProgress = false;
+      let authInitialized = false;
+      let authTimeoutId = null;
+
+      /* Teardown: Fix Bug 9 — use Symbol key, not window property name */
+      function teardown() {
+        ac.abort();
+        if (authUnsubscribe) { authUnsubscribe(); authUnsubscribe = null; }
+        if (authTimeoutId)   { clearTimeout(authTimeoutId); authTimeoutId = null; }
+        teardownRetryButton();
+        // Remove from window
+        delete window[TEARDOWN_KEY];
       }
 
-      toggleLoading(false);
-    };
-
-    DOM.logoutBtn.onclick = async () => {
+      // Expose for SPA / test runners — Fix Bug 9: unique symbol key prevents overwrite
+      window[TEARDOWN_KEY] = teardown;
+      // Also expose a stable public name but make it non-configurable to deter overwrite
       try {
-        await signOut(auth);
-        announce("Logged out");
-      } catch {
-        showError("Logout failed");
+        Object.defineProperty(window, 'teardownPlanAway', {
+          value: teardown, writable: false, configurable: false,
+        });
+      } catch (_) { /* may already be defined on hot-reload */ }
+
+      /* Auth state timeout */
+      authTimeoutId = setTimeout(() => {
+        if (!authInitialized) {
+          if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
+          showView(dom, 'view-login');
+          showStatus(dom, 'login', t.timeout_error, 'error', true);
+          mountRetryButton(dom, () => {
+            teardownRetryButton();
+            clearStatus(dom, 'login');
+            window.location.reload();
+          });
+          announce(t.timeout_error);
+        }
+      }, AUTH_TIMEOUT_MS);
+
+      /* ── onAuthStateChanged ── */
+      authUnsubscribe = onAuthStateChanged(auth, (user) => {
+        authInitialized = true;
+        clearTimeout(authTimeoutId);
+        if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
+
+        if (user) {
+          renderDashboard(dom, user, /* isReturn= */ !signinInProgress);
+          showView(dom, 'view-dashboard');
+          const displayName = (user.displayName || '').trim() || user.email || 'User';
+          if (!signinInProgress) {
+            // Returning user announcement — Fix Bug 4
+            announce(t.returning_user(displayName));
+          } else {
+            announce(t.welcome_back(displayName));
+          }
+          signinInProgress = false;
+          // Move focus to dashboard heading
+          requestAnimationFrame(() => {
+            const h = dom['dash-heading'];
+            if (h) h.focus();
+          });
+        } else {
+          showView(dom, 'view-login');
+          // Move focus to login heading
+          requestAnimationFrame(() => {
+            const h = document.getElementById('login-heading');
+            if (h) h.focus();
+          });
+        }
+      });
+
+      /* ── SIGN IN ── */
+      const btnSignin = dom['btn-signin'];
+      if (btnSignin) {
+        btnSignin.addEventListener('click', async () => {
+          // Offline guard
+          if (!navigator.onLine) {
+            showStatus(dom, 'login', t.offline, 'info');
+            announce(t.offline);
+            return;
+          }
+          // Double-click guard
+          if (signinInProgress) return;
+          signinInProgress = true;
+          btnSignin.disabled = true;
+          clearStatus(dom, 'login');
+          announce(t.signing_in);
+
+          try {
+            const provider = new GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
+            await signInWithPopup(auth, provider);
+            // onAuthStateChanged handles the rest
+          } catch (err) {
+            signinInProgress = false;
+            btnSignin.disabled = false;
+            // User-cancelled popup — not an error
+            if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+              return;
+            }
+            const msg = err.code === 'auth/popup-blocked'
+              ? t.popup_blocked
+              : t.auth_error;
+            showStatus(dom, 'login', msg, 'error', true);
+            mountRetryButton(dom, () => {
+              teardownRetryButton();
+              clearStatus(dom, 'login');
+              btnSignin.disabled = false;
+              btnSignin.focus();
+            });
+            announce(msg);
+          }
+        }, { signal });
       }
-    };
 
-    DOM.retryBtn.onclick = () => {
-      initRunning = false;
-      initApp();
-    };
+      /* ── SIGN OUT ── */
+      const btnSignout = dom['btn-signout'];
+      if (btnSignout) {
+        btnSignout.addEventListener('click', async () => {
+          if (signoutInProgress) return;
+          signoutInProgress = true;
+          btnSignout.disabled = true;
+          clearStatus(dom, 'dash');
+          announce(t.signing_out);
+          try {
+            await signOut(auth);
+            signoutInProgress = false;
+            // onAuthStateChanged handles view swap
+          } catch (err) {
+            signoutInProgress = false;
+            btnSignout.disabled = false;
+            showStatus(dom, 'dash', t.logout_error, 'error');
+            announce(t.logout_error);
+          }
+        }, { signal });
+      }
 
-  } catch (e) {
-    showError(e.message || "Initialization failed");
-    DOM.retryBtn.classList.remove("hidden");
-  }
+      /* ── TAB / UNLOAD CLEANUP ── */
+      window.addEventListener('beforeunload', teardown, { signal });
+    }
 
-  initRunning = false;
-}
+    /* ─────────────────────────────────────────────────────────
+     * RENDER DASHBOARD — No innerHTML, safe photo handling
+     * ───────────────────────────────────────────────────────── */
+    function renderDashboard(dom, user, isReturn) {
+      const rawName  = (user.displayName || '').trim();
+      const safeName = rawName || user.email?.split('@')[0] || 'User';
 
-/* ================= START ================= */
-initApp();
+      // Welcome text
+      safeSetText('dash-heading', isReturn ? t.welcome_back(safeName) : t.welcome_back(safeName));
+      safeSetText('user-email', user.email || '');
+      safeSetText('email-label', t.logged_in_as);   // Fix Bug 11
 
-/* ================= CLEANUP ================= */
-window.addEventListener("beforeunload", () => {
-  if (unsubscribe) unsubscribe();
-});
+      // Avatar — graceful fallback for broken photo URL
+      const img      = dom['user-avatar'];
+      const fallback = dom['user-avatar-fallback'];
+      if (img && fallback) {
+        if (user.photoURL) {
+          img.src = user.photoURL;
+          img.alt = safeName;
+          img.style.display = 'block';
+          fallback.style.display = 'none';
+          // Fix: broken photo hidden cleanly
+          img.onerror = () => {
+            img.style.display = 'none';
+            fallback.style.display = 'flex';
+            fallback.textContent = safeName.charAt(0).toUpperCase();
+          };
+        } else {
+          img.style.display = 'none';
+          fallback.style.display = 'flex';
+          fallback.textContent = safeName.charAt(0).toUpperCase();
+        }
+      }
 
-</script>
+      // Re-enable sign-out button
+      const btnSignout = dom['btn-signout'];
+      if (btnSignout) btnSignout.disabled = false;
+      clearStatus(dom, 'dash');
+    }
+
+    /* ── START ── */
+    bootstrap();
+  </script>
 </body>
 </html>
