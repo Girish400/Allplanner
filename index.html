@@ -9,7 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 
-  <!-- Firebase SDK — loaded as regular scripts (more reliable than dynamic import) -->
+  <!-- Fix #10: Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://securetoken.googleapis.com wss://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https: blob:; frame-src https://camp-cbf1d.firebaseapp.com;" />
+
+  <!-- Firebase SDK — compat build, exposes window.firebase globally -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <style>
@@ -230,6 +234,19 @@
       font-size: 0.875rem; color: var(--text-sec);
     }
 
+    /* Inline spinner inside the sign-in button (Bug 11 — loading indicator) */
+    .btn-spinner {
+      width: 16px; height: 16px; flex-shrink: 0;
+      border: 2px solid rgba(60,64,67,0.25);
+      border-top-color: #3c4043;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      display: none;
+    }
+    .btn-google.loading .btn-spinner  { display: block; }
+    .btn-google.loading .google-icon  { display: none; }
+    .btn-google.loading .btn-label    { opacity: 0.6; }
+
     /* ── ERROR / STATUS BOX ─────────────────────────────── */
     .status-box {
       border-radius: 10px; padding: 14px 16px;
@@ -416,17 +433,21 @@
             type="button"
             aria-label="Sign in with Google"
             data-i18n-aria="sign_in_aria"
+            disabled
           >
+            <!-- btn-spinner shown during auth (Bug 11 — loading indicator) -->
+            <span class="btn-spinner" aria-hidden="true"></span>
             <svg class="google-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            Sign in with Google
+            <span class="btn-label">Sign in with Google</span>
           </button>
 
-          <div id="login-status" class="status-box" role="alert" aria-live="assertive" aria-atomic="true">
+          <!-- Bug 9 fix: aria-live="polite" — assertive interrupts screen readers too aggressively -->
+          <div id="login-status" class="status-box" role="alert" aria-live="polite" aria-atomic="true">
             <span id="login-status-msg"></span>
             <div class="retry-row" id="login-retry-row" style="display:none"></div>
           </div>
@@ -495,139 +516,196 @@
     (function enforceHTTPS() {
       if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         const httpsURL = 'https://' + location.host + location.pathname + location.search + location.hash;
-        try { location.replace(httpsURL); } catch (_) { /* silently ignore on local dev */ }
+        try { location.replace(httpsURL); } catch (_) { /* no-op on local dev */ }
       }
     })();
 
     /* ─────────────────────────────────────────────────────────
+     * FIX #1 — STATE MACHINE
+     * Replaces scattered boolean flags (initRunning, authResolved)
+     * with a single explicit state enum. Every transition goes
+     * through setState() so state is always observable and logged.
+     *
+     * States:
+     *   idle         — before bootstrap runs
+     *   sdk-loading  — waiting for Firebase SDK check
+     *   auth-pending — onAuthStateChanged not yet fired
+     *   redirect-pending — waiting for getRedirectResult
+     *   signing-in   — popup/redirect in progress
+     *   signing-out  — signOut() in progress
+     *   authenticated — user signed in, dashboard visible
+     *   unauthenticated — no user, login view visible
+     *   error        — terminal error, retry available
+     * ───────────────────────────────────────────────────────── */
+    const STATES = Object.freeze({
+      IDLE:              'idle',
+      SDK_LOADING:       'sdk-loading',
+      AUTH_PENDING:      'auth-pending',
+      REDIRECT_PENDING:  'redirect-pending',
+      SIGNING_IN:        'signing-in',
+      SIGNING_OUT:       'signing-out',
+      AUTHENTICATED:     'authenticated',
+      UNAUTHENTICATED:   'unauthenticated',
+      ERROR:             'error',
+    });
+
+    let _appState = STATES.IDLE;
+
+    function setState(next) {
+      console.debug(`[PlanAway] state: ${_appState} → ${next}`);
+      _appState = next;
+    }
+
+    function inState(...states) {
+      return states.includes(_appState);
+    }
+
+    /* ─────────────────────────────────────────────────────────
      * SECTION 1 — INTERNATIONALISATION (i18n)
-     * Fix: Bugs 4, 5, 6, 7, 11 — all UI strings localised;
-     * lang set AFTER fallback is resolved; full BCP-47 subtag kept.
      * ───────────────────────────────────────────────────────── */
     const TRANSLATIONS = {
       en: {
-        sign_in_aria:   'Sign in with Google',
-        login_heading:  'Welcome, Adventurer',
-        login_subline:  'Sign in to plan your next great escape.',
-        logged_in_as:   'Logged in as',
-        sign_out:       'Sign Out',
-        loading:        'Getting things ready…',
-        offline:        '⚡ You are offline. Please reconnect to sign in.',
-        timeout_error:  'Sign-in is taking too long. Please try again.',
-        cdn_error:      'Could not load required scripts. Check your connection and retry.',
-        popup_blocked:  'Popup was blocked. Please allow popups and try again.',
-        auth_error:     'Sign-in failed. Please try again.',
-        logout_error:   'Sign-out failed. Please try again.',
-        retry:          'Retry',
-        welcome_back:   (name) => `Welcome back, ${name}!`,
-        signed_out:     'You have been signed out.',
-        signing_in:     'Signing in…',
-        signing_out:    'Signing out…',
-        returning_user: (name) => `Signed in as ${name}.`,
-        http_warning:   'You are on an insecure connection.',
-        http_link_text: 'Switch to HTTPS',
-        http_link_href: () => 'https://' + location.host + location.pathname + location.search + location.hash,
+        sign_in_aria:        'Sign in with Google',
+        login_heading:       'Welcome, Adventurer',
+        login_subline:       'Sign in to plan your next great escape.',
+        logged_in_as:        'Logged in as',
+        sign_out:            'Sign Out',
+        loading:             'Getting things ready…',
+        offline:             '⚡ You are offline. Please reconnect to sign in.',
+        timeout_error:       'Sign-in is taking too long. Please try again.',
+        cdn_error:           'Could not load required scripts. Check your connection and retry.',
+        popup_blocked:       'Popup was blocked. Please allow popups for this site and try again.',
+        network_error:       'Network error. Check your connection and try again.',
+        credential_conflict: 'This email is linked to a different sign-in method. Try another account.',
+        too_many_requests:   'Too many attempts. Please wait a moment and try again.',
+        auth_error:          'Sign-in failed. Please try again.',
+        logout_error:        'Sign-out failed. Please try again.',
+        retry:               'Retry',
+        signing_in:          'Signing in…',
+        signing_out:         'Signing out…',
+        redirect_hint:       'Completing sign-in…',
+        welcome_back:        (name) => `Welcome back, ${name}!`,
+        signed_out:          'You have been signed out.',
+        returning_user:      (name) => `Signed in as ${name}.`,
+        http_warning:        'You are on an insecure connection.',
+        http_link_text:      'Switch to HTTPS',
+        http_link_href:      () => 'https://' + location.host + location.pathname + location.search + location.hash,
       },
       ar: {
-        sign_in_aria:   'تسجيل الدخول بواسطة Google',
-        login_heading:  'مرحباً أيها المغامر',
-        login_subline:  'سجّل دخولك للتخطيط لمغامرتك القادمة.',
-        logged_in_as:   'تم تسجيل الدخول بواسطة',
-        sign_out:       'تسجيل الخروج',
-        loading:        'جارٍ التحضير…',
-        offline:        '⚡ أنت غير متصل. يرجى إعادة الاتصال.',
-        timeout_error:  'استغرق تسجيل الدخول وقتاً طويلاً. حاول مجدداً.',
-        cdn_error:      'تعذّر تحميل البرامج. تحقق من اتصالك وأعد المحاولة.',
-        popup_blocked:  'تم حظر النافذة المنبثقة. يُرجى السماح بها وإعادة المحاولة.',
-        auth_error:     'فشل تسجيل الدخول. يُرجى المحاولة مرة أخرى.',
-        logout_error:   'فشل تسجيل الخروج. يُرجى المحاولة مرة أخرى.',
-        retry:          'إعادة المحاولة',
-        welcome_back:   (name) => `مرحباً بعودتك، ${name}!`,
-        signed_out:     'تم تسجيل خروجك.',
-        signing_in:     'جارٍ تسجيل الدخول…',
-        signing_out:    'جارٍ تسجيل الخروج…',
-        returning_user: (name) => `أنت مسجّل الدخول باسم ${name}.`,
-        http_warning:   'أنت على اتصال غير آمن.',
-        http_link_text: 'التبديل إلى HTTPS',
-        http_link_href: () => 'https://' + location.host + location.pathname + location.search + location.hash,
+        sign_in_aria:        'تسجيل الدخول بواسطة Google',
+        login_heading:       'مرحباً أيها المغامر',
+        login_subline:       'سجّل دخولك للتخطيط لمغامرتك القادمة.',
+        logged_in_as:        'تم تسجيل الدخول بواسطة',
+        sign_out:            'تسجيل الخروج',
+        loading:             'جارٍ التحضير…',
+        offline:             '⚡ أنت غير متصل. يرجى إعادة الاتصال.',
+        timeout_error:       'استغرق تسجيل الدخول وقتاً طويلاً. حاول مجدداً.',
+        cdn_error:           'تعذّر تحميل البرامج. تحقق من اتصالك وأعد المحاولة.',
+        popup_blocked:       'تم حظر النافذة المنبثقة. يُرجى السماح بها لهذا الموقع وإعادة المحاولة.',
+        network_error:       'خطأ في الشبكة. تحقق من اتصالك وأعد المحاولة.',
+        credential_conflict: 'هذا البريد الإلكتروني مرتبط بطريقة تسجيل دخول مختلفة. جرّب حساباً آخر.',
+        too_many_requests:   'محاولات كثيرة جداً. الرجاء الانتظار والمحاولة مجدداً.',
+        auth_error:          'فشل تسجيل الدخول. يُرجى المحاولة مرة أخرى.',
+        logout_error:        'فشل تسجيل الخروج. يُرجى المحاولة مرة أخرى.',
+        retry:               'إعادة المحاولة',
+        signing_in:          'جارٍ تسجيل الدخول…',
+        signing_out:         'جارٍ تسجيل الخروج…',
+        redirect_hint:       'جارٍ إتمام تسجيل الدخول…',
+        welcome_back:        (name) => `مرحباً بعودتك، ${name}!`,
+        signed_out:          'تم تسجيل خروجك.',
+        returning_user:      (name) => `أنت مسجّل الدخول باسم ${name}.`,
+        http_warning:        'أنت على اتصال غير آمن.',
+        http_link_text:      'التبديل إلى HTTPS',
+        http_link_href:      () => 'https://' + location.host + location.pathname + location.search + location.hash,
       },
       he: {
-        sign_in_aria:   'התחבר עם Google',
-        login_heading:  'ברוך הבא, הרפתקן',
-        login_subline:  'התחבר כדי לתכנן את ההרפתקה הבאה שלך.',
-        logged_in_as:   'מחובר בתור',
-        sign_out:       'התנתק',
-        loading:        'טוען…',
-        offline:        '⚡ אין חיבור לאינטרנט.',
-        timeout_error:  'ההתחברות נמשכת זמן רב מדי. נסה שוב.',
-        cdn_error:      'לא ניתן לטעון סקריפטים. בדוק את החיבור.',
-        popup_blocked:  'החלון הנקפץ נחסם. אפשר חלונות נקפצים ונסה שוב.',
-        auth_error:     'ההתחברות נכשלה. נסה שוב.',
-        logout_error:   'ההתנתקות נכשלה. נסה שוב.',
-        retry:          'נסה שוב',
-        welcome_back:   (name) => `ברוך שובך, ${name}!`,
-        signed_out:     'התנתקת בהצלחה.',
-        signing_in:     'מתחבר…',
-        signing_out:    'מתנתק…',
-        returning_user: (name) => `מחובר כ-${name}.`,
-        http_warning:   'אתה על חיבור לא מאובטח.',
-        http_link_text: 'עבור ל-HTTPS',
-        http_link_href: () => 'https://' + location.host + location.pathname + location.search + location.hash,
+        sign_in_aria:        'התחבר עם Google',
+        login_heading:       'ברוך הבא, הרפתקן',
+        login_subline:       'התחבר כדי לתכנן את ההרפתקה הבאה שלך.',
+        logged_in_as:        'מחובר בתור',
+        sign_out:            'התנתק',
+        loading:             'טוען…',
+        offline:             '⚡ אין חיבור לאינטרנט.',
+        timeout_error:       'ההתחברות נמשכת זמן רב מדי. נסה שוב.',
+        cdn_error:           'לא ניתן לטעון סקריפטים. בדוק את החיבור.',
+        popup_blocked:       'החלון הנקפץ נחסם. אפשר חלונות נקפצים לאתר זה ונסה שוב.',
+        network_error:       'שגיאת רשת. בדוק את החיבור ונסה שוב.',
+        credential_conflict: 'כתובת האימייל הזו כבר מקושרת לשיטת כניסה אחרת. נסה חשבון אחר.',
+        too_many_requests:   'יותר מדי ניסיונות. המתן רגע ונסה שוב.',
+        auth_error:          'ההתחברות נכשלה. נסה שוב.',
+        logout_error:        'ההתנתקות נכשלה. נסה שוב.',
+        retry:               'נסה שוב',
+        signing_in:          'מתחבר…',
+        signing_out:         'מתנתק…',
+        redirect_hint:       'משלים כניסה…',
+        welcome_back:        (name) => `ברוך שובך, ${name}!`,
+        signed_out:          'התנתקת בהצלחה.',
+        returning_user:      (name) => `מחובר כ-${name}.`,
+        http_warning:        'אתה על חיבור לא מאובטח.',
+        http_link_text:      'עבור ל-HTTPS',
+        http_link_href:      () => 'https://' + location.host + location.pathname + location.search + location.hash,
       },
       fa: {
-        sign_in_aria:   'ورود با Google',
-        login_heading:  'خوش آمدید، ماجراجو',
-        login_subline:  'برای برنامه‌ریزی ماجراجویی بعدی وارد شوید.',
-        logged_in_as:   'وارد شده به عنوان',
-        sign_out:       'خروج',
-        loading:        'در حال آماده‌سازی…',
-        offline:        '⚡ اتصال اینترنت ندارید.',
-        timeout_error:  'ورود خیلی طول کشید. دوباره امتحان کنید.',
-        cdn_error:      'بارگیری اسکریپت‌ها ناموفق بود.',
-        popup_blocked:  'پاپ‌آپ مسدود شد. لطفاً اجازه دهید و دوباره امتحان کنید.',
-        auth_error:     'ورود ناموفق بود. دوباره امتحان کنید.',
-        logout_error:   'خروج ناموفق بود. دوباره امتحان کنید.',
-        retry:          'تلاش مجدد',
-        welcome_back:   (name) => `خوش برگشتی، ${name}!`,
-        signed_out:     'خارج شدید.',
-        signing_in:     'در حال ورود…',
-        signing_out:    'در حال خروج…',
-        returning_user: (name) => `وارد شده به عنوان ${name}.`,
-        http_warning:   'اتصال ناامن.',
-        http_link_text: 'رفتن به HTTPS',
-        http_link_href: () => 'https://' + location.host + location.pathname + location.search + location.hash,
+        sign_in_aria:        'ورود با Google',
+        login_heading:       'خوش آمدید، ماجراجو',
+        login_subline:       'برای برنامه‌ریزی ماجراجویی بعدی وارد شوید.',
+        logged_in_as:        'وارد شده به عنوان',
+        sign_out:            'خروج',
+        loading:             'در حال آماده‌سازی…',
+        offline:             '⚡ اتصال اینترنت ندارید.',
+        timeout_error:       'ورود خیلی طول کشید. دوباره امتحان کنید.',
+        cdn_error:           'بارگیری اسکریپت‌ها ناموفق بود.',
+        popup_blocked:       'پاپ‌آپ مسدود شد. لطفاً برای این سایت اجازه دهید و دوباره امتحان کنید.',
+        network_error:       'خطای شبکه. اتصال خود را بررسی کنید و دوباره امتحان کنید.',
+        credential_conflict: 'این ایمیل با روش ورود دیگری مرتبط است. حساب دیگری امتحان کنید.',
+        too_many_requests:   'تلاش‌های زیادی انجام شد. لحظه‌ای صبر کنید و دوباره امتحان کنید.',
+        auth_error:          'ورود ناموفق بود. دوباره امتحان کنید.',
+        logout_error:        'خروج ناموفق بود. دوباره امتحان کنید.',
+        retry:               'تلاش مجدد',
+        signing_in:          'در حال ورود…',
+        signing_out:         'در حال خروج…',
+        redirect_hint:       'در حال تکمیل ورود…',
+        welcome_back:        (name) => `خوش برگشتی، ${name}!`,
+        signed_out:          'خارج شدید.',
+        returning_user:      (name) => `وارد شده به عنوان ${name}.`,
+        http_warning:        'اتصال ناامن.',
+        http_link_text:      'رفتن به HTTPS',
+        http_link_href:      () => 'https://' + location.host + location.pathname + location.search + location.hash,
       },
       ur: {
-        sign_in_aria:   'Google سے سائن ان کریں',
-        login_heading:  'خوش آمدید، مہم جو',
-        login_subline:  'اگلی مہم کی منصوبہ بندی کے لیے سائن ان کریں۔',
-        logged_in_as:   'لاگ ان بطور',
-        sign_out:       'سائن آؤٹ',
-        loading:        'تیاری جاری ہے…',
-        offline:        '⚡ آپ آف لائن ہیں۔',
-        timeout_error:  'سائن ان میں بہت وقت لگ رہا ہے۔ دوبارہ کوشش کریں۔',
-        cdn_error:      'اسکرپٹ لوڈ نہیں ہو سکے۔',
-        popup_blocked:  'پاپ اپ بلاک ہو گیا۔ اجازت دیں اور دوبارہ کوشش کریں۔',
-        auth_error:     'سائن ان ناکام ہوا۔ دوبارہ کوشش کریں۔',
-        logout_error:   'سائن آؤٹ ناکام ہوا۔ دوبارہ کوشش کریں۔',
-        retry:          'دوبارہ کوشش',
-        welcome_back:   (name) => `خوش آمدید واپس، ${name}!`,
-        signed_out:     'آپ سائن آؤٹ ہو گئے۔',
-        signing_in:     'سائن ان ہو رہا ہے…',
-        signing_out:    'سائن آؤٹ ہو رہا ہے…',
-        returning_user: (name) => `${name} کے طور پر لاگ ان ہیں۔`,
-        http_warning:   'غیر محفوظ کنیکشن۔',
-        http_link_text: 'HTTPS پر جائیں',
-        http_link_href: () => 'https://' + location.host + location.pathname + location.search + location.hash,
+        sign_in_aria:        'Google سے سائن ان کریں',
+        login_heading:       'خوش آمدید، مہم جو',
+        login_subline:       'اگلی مہم کی منصوبہ بندی کے لیے سائن ان کریں۔',
+        logged_in_as:        'لاگ ان بطور',
+        sign_out:            'سائن آؤٹ',
+        loading:             'تیاری جاری ہے…',
+        offline:             '⚡ آپ آف لائن ہیں۔',
+        timeout_error:       'سائن ان میں بہت وقت لگ رہا ہے۔ دوبارہ کوشش کریں۔',
+        cdn_error:           'اسکرپٹ لوڈ نہیں ہو سکے۔',
+        popup_blocked:       'پاپ اپ بلاک ہو گیا۔ اس سائٹ کے لیے اجازت دیں اور دوبارہ کوشش کریں۔',
+        network_error:       'نیٹ ورک خرابی۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔',
+        credential_conflict: 'یہ ای میل کسی اور سائن ان طریقے سے منسلک ہے۔ دوسرا اکاؤنٹ آزمائیں۔',
+        too_many_requests:   'بہت زیادہ کوششیں ہوئیں۔ تھوڑی دیر انتظار کریں اور دوبارہ کوشش کریں۔',
+        auth_error:          'سائن ان ناکام ہوا۔ دوبارہ کوشش کریں۔',
+        logout_error:        'سائن آؤٹ ناکام ہوا۔ دوبارہ کوشش کریں۔',
+        retry:               'دوبارہ کوشش',
+        signing_in:          'سائن ان ہو رہا ہے…',
+        signing_out:         'سائن آؤٹ ہو رہا ہے…',
+        redirect_hint:       'سائن ان مکمل ہو رہا ہے…',
+        welcome_back:        (name) => `خوش آمدید واپس، ${name}!`,
+        signed_out:          'آپ سائن آؤٹ ہو گئے۔',
+        returning_user:      (name) => `${name} کے طور پر لاگ ان ہیں۔`,
+        http_warning:        'غیر محفوظ کنیکشن۔',
+        http_link_text:      'HTTPS پر جائیں',
+        http_link_href:      () => 'https://' + location.host + location.pathname + location.search + location.hash,
       },
     };
-    // RTL language codes (full list)
+
+    // RTL language codes (full list — all 9)
     const RTL_LANGS = new Set(['ar','he','fa','ur','yi','dv','ps','sd','ckb']);
 
     /**
      * Detect browser language. Returns base code and full BCP-47 tag.
-     * Fix Bug 5: we keep the FULL subtag (e.g. 'ar-SA') for document.lang
-     *            but fall back by base code for translation lookup.
      */
     function detectLang() {
       const full = navigator.language || navigator.languages?.[0] || 'en';
@@ -635,14 +713,13 @@
       return { full, base };
     }
 
-    let t = TRANSLATIONS.en;   // active translations
-    let langFull = 'en';        // for document.lang
+    let t = TRANSLATIONS.en;
+    let langFull = 'en';
 
     function applyTranslations(base, full) {
-      // Fix Bug 7: resolve fallback FIRST, then set document.lang
+      // Resolve fallback FIRST, then set document.lang
       const resolved = TRANSLATIONS[base] ? base : 'en';
       t = TRANSLATIONS[resolved];
-      // Fix Bug 5: use full BCP-47 tag
       langFull = TRANSLATIONS[base] ? full : 'en';
       document.documentElement.lang = langFull;
       // Fix Bug 6: RTL for all 9 RTL langs (not just Arabic)
@@ -654,14 +731,12 @@
       safeSetText('email-label', t.logged_in_as);     // Fix Bug 11
       const btnSignin = document.getElementById('btn-signin');
       if (btnSignin) {
-        // Bug 2 fix: capture the SVG BEFORE wiping textContent,
-        // otherwise querySelector returns null and the icon is lost forever.
-        const svg = btnSignin.querySelector('svg');
-        btnSignin.textContent = '';
-        if (svg) btnSignin.appendChild(svg);
-        const span = document.createElement('span');
-        span.textContent = t.sign_in_aria;
-        btnSignin.appendChild(span);
+        // Bug 2 fix: capture SVG BEFORE wiping textContent.
+        // Also preserve the .btn-spinner span; only replace the .btn-label text.
+        const labelEl = btnSignin.querySelector('.btn-label');
+        if (labelEl) {
+          labelEl.textContent = t.sign_in_aria;
+        }
         btnSignin.setAttribute('aria-label', t.sign_in_aria);
       }
       const btnSignout = document.getElementById('btn-signout');
@@ -713,6 +788,57 @@
       // Force re-announcement by briefly clearing
       el.textContent = '';
       requestAnimationFrame(() => { el.textContent = msg; });
+    }
+
+    /**
+     * Put the sign-in button into a loading state (Bug 11).
+     * Shows the inline spinner, dims the label, disables the button.
+     */
+    function setButtonLoading(btn, loadingText) {
+      if (!btn) return;
+      btn.disabled = true;
+      btn.classList.add('loading');
+      btn.setAttribute('aria-label', loadingText);
+    }
+
+    /**
+     * Restore the sign-in button to its normal state.
+     */
+    function resetButtonLoading(btn, normalText) {
+      if (!btn) return;
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btn.setAttribute('aria-label', normalText);
+    }
+
+    /**
+     * Bug 10 — debounce rapid showStatus calls so the user has time to read.
+     * We track the last message; if the same message arrives within 400 ms
+     * of a clear, we let it through immediately, but we never overwrite a
+     * visible error within 800 ms of it appearing.
+     */
+    let _lastStatusTime = 0;
+    let _lastStatusMsg  = '';
+    const STATUS_MIN_VISIBLE_MS = 800;
+
+    function showStatusDebounced(dom, area, msg, type, showRetry) {
+      const now = Date.now();
+      const sameMsg = msg === _lastStatusMsg;
+      const tooSoon = (now - _lastStatusTime) < STATUS_MIN_VISIBLE_MS && !sameMsg && _lastStatusMsg !== '';
+      if (tooSoon) {
+        // Schedule the new message to appear after the minimum display window
+        setTimeout(() => showStatus(dom, area, msg, type, showRetry), STATUS_MIN_VISIBLE_MS - (now - _lastStatusTime));
+        return;
+      }
+      _lastStatusTime = now;
+      _lastStatusMsg  = msg;
+      showStatus(dom, area, msg, type, showRetry);
+    }
+
+    function clearStatusAndDebounce(dom, area) {
+      _lastStatusMsg  = '';
+      _lastStatusTime = 0;
+      clearStatus(dom, area);
     }
 
     /* Show / hide view sections — no innerHTML */
@@ -819,9 +945,6 @@
 
     /* ─────────────────────────────────────────────────────────
      * SECTION 5 — FIREBASE CONFIG
-     * Uses firebase-*-compat.js loaded as <script> tags above.
-     * Compat SDK exposes window.firebase — no dynamic import needed,
-     * no CSP/browser-extension blocking issues.
      * ───────────────────────────────────────────────────────── */
     const FIREBASE_CONFIG = {
       apiKey:            'AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc',
@@ -835,55 +958,69 @@
 
     const AUTH_TIMEOUT_MS = 10000;
 
-    /**
-     * Returns a Promise that rejects with { code: 'TIMEOUT' } after ms milliseconds.
-     * Used with Promise.race() so the rejection properly enters the async/await
-     * catch block — unlike setTimeout(()=>{ throw }, ms) which escapes to global scope.
-     * Bug 1 fix.
-     */
+    /** Returns a Promise that rejects after ms — used with Promise.race() */
     function rejectAfter(ms) {
       return new Promise((_, reject) =>
         setTimeout(() => reject({ code: 'TIMEOUT' }), ms)
       );
     }
 
+    /**
+     * FIX #3 — Centralised error-code → translated message mapping.
+     * Covers every known Firebase auth error code explicitly.
+     */
+    function authErrorMessage(code) {
+      switch (code) {
+        case 'auth/popup-blocked':
+          return t.popup_blocked;
+        case 'auth/network-request-failed':
+          return t.network_error;
+        case 'auth/account-exists-with-different-credential':
+          return t.credential_conflict;
+        case 'auth/too-many-requests':
+          return t.too_many_requests;
+        case 'auth/user-disabled':
+          return t.auth_error;   // account disabled — generic is fine
+        case 'auth/operation-not-allowed':
+          return t.auth_error;
+        default:
+          return t.auth_error;
+      }
+    }
+
     /* ─────────────────────────────────────────────────────────
      * SECTION 6 — APPLICATION BOOTSTRAP
      * ───────────────────────────────────────────────────────── */
     async function bootstrap() {
-      /* 0. Detect language & apply translations FIRST */
+      setState(STATES.SDK_LOADING);
+
+      /* 0. Language */
       const { full, base } = detectLang();
       applyTranslations(base, full);
 
-      /* 1. Extract DOM — graceful, non-fatal for missing elements */
+      /* 1. DOM */
       const dom = extractDOM();
 
-      /* 2. Offline detection setup */
+      /* 2. Global offline banner (non-auth-layer) */
       const checkOffline = () => updateOfflineBanner(dom, !navigator.onLine);
       window.addEventListener('online',  checkOffline);
       window.addEventListener('offline', checkOffline);
       checkOffline();
 
-      /* 3. HTTP check */
+      /* 3. HTTPS gate */
       if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
         showView(dom, 'view-login');
         buildHTTPSMessage(dom);
+        setState(STATES.ERROR);
         return;
       }
 
-      /* 4. Check the compat SDK loaded correctly via <script> tags.
-            Race against a timeout so a stalled CDN never hangs forever. */
+      /* 4. SDK presence check (Promise.race — proper async rejection) */
       try {
         await Promise.race([
-          // Resolves immediately if firebase is already on window (normal case)
-          // or rejects via the timeout if the SDK scripts never executed.
           new Promise((resolve, reject) => {
-            if (typeof firebase !== 'undefined' && firebase.app) {
-              resolve();
-            } else {
-              reject({ code: 'CDN_MISSING' });
-            }
+            typeof firebase !== 'undefined' && firebase.app ? resolve() : reject({ code: 'CDN_MISSING' });
           }),
           rejectAfter(AUTH_TIMEOUT_MS),
         ]);
@@ -891,26 +1028,21 @@
         if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
         showView(dom, 'view-login');
         const msg = err.code === 'TIMEOUT' ? t.timeout_error : t.cdn_error;
-        showStatus(dom, 'login', msg, 'error', true);
-        mountRetryButton(dom, () => {
-          teardownRetryButton();
-          clearStatus(dom, 'login');
-          window.location.reload();
-        });
+        showStatusDebounced(dom, 'login', msg, 'error', true);
+        mountRetryButton(dom, () => { teardownRetryButton(); clearStatusAndDebounce(dom, 'login'); window.location.reload(); });
         announce(msg);
+        setState(STATES.ERROR);
         return;
       }
 
-      /* 5. Init Firebase — guard against re-init */
+      /* 5. Init Firebase (re-init guard) */
       try {
-        if (!firebase.apps.length) {
-          firebase.initializeApp(FIREBASE_CONFIG);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
       } catch (err) {
         console.error('[PlanAway] Firebase init error:', err);
       }
 
-      /* 6. Get auth instance and set LOCAL persistence */
+      /* 6. Auth + persistence */
       const auth = firebase.auth();
       try {
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
@@ -918,29 +1050,30 @@
         console.warn('[PlanAway] setPersistence failed (non-fatal):', err);
       }
 
-      /* 7. Boot the auth layer */
+      /* 7. Boot auth layer */
       bootAuth({ dom, auth });
     }
 
     /* ─────────────────────────────────────────────────────────
      * AUTH LAYER
-     * Fix: Bug 9 — teardownApp namespaced to avoid collision;
-     *             using a Symbol-keyed property
      * ───────────────────────────────────────────────────────── */
     const TEARDOWN_KEY = Symbol.for('__planaway_teardown__');
 
     function bootAuth({ dom, auth }) {
-      /* Abort controller for all non-retry listeners */
       const ac = new AbortController();
       const { signal } = ac;
 
-      let authUnsubscribe = null;
-      let signinInProgress = false;
+      let authUnsubscribe  = null;
+      let authTimeoutId    = null;
       let signoutInProgress = false;
-      let authInitialized = false;
-      let authTimeoutId = null;
 
-      /* Teardown */
+      /* FIX #4 — Run ID: every sign-in attempt gets a unique ID.
+       * Any async result from a previous attempt is silently dropped. */
+      let _runId = 0;
+      function nextRunId() { return ++_runId; }
+      function isCurrentRun(id) { return id === _runId; }
+
+      /* ── Teardown (FIX #5 — clears ALL async work before retry) ── */
       function teardown() {
         ac.abort();
         if (authUnsubscribe) { authUnsubscribe(); authUnsubscribe = null; }
@@ -951,45 +1084,72 @@
 
       window[TEARDOWN_KEY] = teardown;
       try {
-        Object.defineProperty(window, 'teardownPlanAway', {
-          value: teardown, writable: false, configurable: false,
-        });
+        Object.defineProperty(window, 'teardownPlanAway', { value: teardown, writable: false, configurable: false });
       } catch (_) { /* hot-reload: already defined */ }
 
-      /* Auth state timeout */
+      /* ── Auth init timeout ── */
       authTimeoutId = setTimeout(() => {
-        if (!authInitialized) {
+        if (!inState(STATES.AUTHENTICATED, STATES.UNAUTHENTICATED)) {
           if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
           showView(dom, 'view-login');
-          showStatus(dom, 'login', t.timeout_error, 'error', true);
-          mountRetryButton(dom, () => {
-            teardownRetryButton();
-            clearStatus(dom, 'login');
-            window.location.reload();
-          });
+          resetButtonLoading(dom['btn-signin'], t.sign_in_aria);
+          showStatusDebounced(dom, 'login', t.timeout_error, 'error', true);
+          mountRetryButton(dom, () => { teardownRetryButton(); clearStatusAndDebounce(dom, 'login'); window.location.reload(); });
           announce(t.timeout_error);
+          setState(STATES.ERROR);
         }
       }, AUTH_TIMEOUT_MS);
 
+      /* ── FIX #2 — Redirect fallback: check for pending redirect result on load.
+       * If the user was sent through signInWithRedirect (popup fallback),
+       * getRedirectResult() delivers the credential here on next page load. ── */
+      setState(STATES.REDIRECT_PENDING);
+      (async () => {
+        try {
+          const result = await auth.getRedirectResult();
+          if (result && result.user) {
+            /* Redirect sign-in succeeded — onAuthStateChanged will fire normally */
+            console.debug('[PlanAway] redirect sign-in completed:', result.user.email);
+          }
+        } catch (err) {
+          /* Redirect errors are non-fatal if user hasn't attempted redirect yet */
+          if (err.code && err.code !== 'auth/no-auth-event') {
+            console.warn('[PlanAway] getRedirectResult error:', err.code);
+          }
+        }
+      })();
+
+      /* ── FIX #8 (focus) + FIX #9 (reactive offline) ── */
+      setState(STATES.AUTH_PENDING);
+      if (dom['btn-signin']) dom['btn-signin'].disabled = true;
+
+      function syncOnlineState() {
+        const btn = dom['btn-signin'];
+        if (!btn || inState(STATES.SIGNING_IN) || !inState(STATES.UNAUTHENTICATED)) return;
+        btn.disabled = !navigator.onLine;
+        updateOfflineBanner(dom, !navigator.onLine);
+      }
+      window.addEventListener('online',  syncOnlineState, { signal });
+      window.addEventListener('offline', syncOnlineState, { signal });
+
       /* ── onAuthStateChanged ── */
       authUnsubscribe = auth.onAuthStateChanged((user) => {
-        authInitialized = true;
         clearTimeout(authTimeoutId);
         if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
 
         if (user) {
-          renderDashboard(dom, user, !signinInProgress);
+          setState(STATES.AUTHENTICATED);
+          const wasSigningIn = inState(STATES.SIGNING_IN);  // captured before state change
+          renderDashboard(dom, user, !wasSigningIn);
           showView(dom, 'view-dashboard');
           const displayName = (user.displayName || '').trim() || user.email || 'User';
-          announce(signinInProgress ? t.welcome_back(displayName) : t.returning_user(displayName));
-          signinInProgress = false;
+          announce(wasSigningIn ? t.welcome_back(displayName) : t.returning_user(displayName));
           requestAnimationFrame(() => { const h = dom['dash-heading']; if (h) h.focus(); });
         } else {
-          // Bug 3 fix: always re-enable the sign-in button when returning to the
-          // login view — covers both normal logout and post-successful-login nav.
-          const btnSignin = dom['btn-signin'];
-          if (btnSignin) btnSignin.disabled = false;
-          signinInProgress = false;
+          setState(STATES.UNAUTHENTICATED);
+          _runId++;                                      // invalidate any in-flight sign-in
+          resetButtonLoading(dom['btn-signin'], t.sign_in_aria);
+          if (dom['btn-signin']) dom['btn-signin'].disabled = !navigator.onLine;
           showView(dom, 'view-login');
           requestAnimationFrame(() => { const h = document.getElementById('login-heading'); if (h) h.focus(); });
         }
@@ -1000,31 +1160,73 @@
       if (btnSignin) {
         btnSignin.addEventListener('click', async () => {
           if (!navigator.onLine) {
-            showStatus(dom, 'login', t.offline, 'info');
+            showStatusDebounced(dom, 'login', t.offline, 'info');
             announce(t.offline);
             return;
           }
-          if (signinInProgress) return;
-          signinInProgress = true;
-          btnSignin.disabled = true;
-          clearStatus(dom, 'login');
+          if (inState(STATES.SIGNING_IN)) return;
+          setState(STATES.SIGNING_IN);
+
+          /* FIX #4 — capture run ID before any await */
+          const myRun = nextRunId();
+
+          setButtonLoading(btnSignin, t.signing_in);
+          clearStatusAndDebounce(dom, 'login');
           announce(t.signing_in);
 
+          const provider = new firebase.auth.GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: 'select_account' });
+
           try {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            provider.setCustomParameters({ prompt: 'select_account' });
             await auth.signInWithPopup(provider);
-            // onAuthStateChanged handles the rest
+            /* onAuthStateChanged handles the rest.
+             * If a stale run resolves here after a retry, isCurrentRun check below
+             * in the catch path protects us. Success path: state moves to AUTHENTICATED. */
           } catch (err) {
-            signinInProgress = false;
-            btnSignin.disabled = false;
-            if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') return;
-            const msg = err.code === 'auth/popup-blocked' ? t.popup_blocked : t.auth_error;
-            showStatus(dom, 'login', msg, 'error', true);
+            /* FIX #4 — drop results from cancelled runs */
+            if (!isCurrentRun(myRun)) return;
+
+            setState(STATES.UNAUTHENTICATED);
+            resetButtonLoading(btnSignin, t.sign_in_aria);
+            btnSignin.disabled = !navigator.onLine;
+
+            /* Silent dismissals — user closed or superseded popup */
+            if (err.code === 'auth/popup-closed-by-user' ||
+                err.code === 'auth/cancelled-popup-request') return;
+
+            /* FIX #2 — Popup blocked: fall back to redirect */
+            if (err.code === 'auth/popup-blocked') {
+              setState(STATES.REDIRECT_PENDING);
+              showStatusDebounced(dom, 'login', t.popup_blocked, 'info', false);
+              announce(t.popup_blocked);
+              try {
+                await auth.signInWithRedirect(provider);
+                /* Page will reload; getRedirectResult() handles result on return */
+              } catch (redirectErr) {
+                setState(STATES.UNAUTHENTICATED);
+                const msg = authErrorMessage(redirectErr.code);
+                showStatusDebounced(dom, 'login', msg, 'error', true);
+                mountRetryButton(dom, () => {
+                  teardownRetryButton();
+                  clearStatusAndDebounce(dom, 'login');
+                  resetButtonLoading(btnSignin, t.sign_in_aria);
+                  btnSignin.disabled = !navigator.onLine;
+                  btnSignin.focus();
+                });
+                announce(msg);
+              }
+              return;
+            }
+
+            /* FIX #3 + FIX #11 — all other error codes mapped explicitly */
+            const msg = authErrorMessage(err.code);
+            showStatusDebounced(dom, 'login', msg, 'error', true);
             mountRetryButton(dom, () => {
+              /* FIX #5 — full state reset: no ghost listeners, no stale run */
               teardownRetryButton();
-              clearStatus(dom, 'login');
-              btnSignin.disabled = false;
+              clearStatusAndDebounce(dom, 'login');
+              resetButtonLoading(btnSignin, t.sign_in_aria);
+              btnSignin.disabled = !navigator.onLine;
               btnSignin.focus();
             });
             announce(msg);
@@ -1039,21 +1241,23 @@
           if (signoutInProgress) return;
           signoutInProgress = true;
           btnSignout.disabled = true;
-          clearStatus(dom, 'dash');
+          setState(STATES.SIGNING_OUT);
+          clearStatusAndDebounce(dom, 'dash');
           announce(t.signing_out);
           try {
             await auth.signOut();
             signoutInProgress = false;
+            /* onAuthStateChanged fires → state → UNAUTHENTICATED */
           } catch (err) {
             signoutInProgress = false;
             btnSignout.disabled = false;
-            showStatus(dom, 'dash', t.logout_error, 'error');
+            setState(STATES.AUTHENTICATED);
+            showStatusDebounced(dom, 'dash', t.logout_error, 'error');
             announce(t.logout_error);
           }
         }, { signal });
       }
 
-      /* ── TAB / UNLOAD CLEANUP ── */
       window.addEventListener('beforeunload', teardown, { signal });
     }
 
@@ -1069,23 +1273,27 @@
       safeSetText('user-email', user.email || '');
       safeSetText('email-label', t.logged_in_as);   // Fix Bug 11
 
-      // Avatar — graceful fallback for broken photo URL
+      // Avatar — Bug 7 fix: always reset both elements first to prevent stale image flicker
       const img      = dom['user-avatar'];
       const fallback = dom['user-avatar-fallback'];
       if (img && fallback) {
+        // Reset unconditionally on every render
+        img.style.display = 'none';
+        img.src = '';
+        img.onerror = null;
+        fallback.style.display = 'none';
+        fallback.textContent = '';
+
         if (user.photoURL) {
           img.src = user.photoURL;
           img.alt = safeName;
           img.style.display = 'block';
-          fallback.style.display = 'none';
-          // Fix: broken photo hidden cleanly
           img.onerror = () => {
             img.style.display = 'none';
             fallback.style.display = 'flex';
             fallback.textContent = safeName.charAt(0).toUpperCase();
           };
         } else {
-          img.style.display = 'none';
           fallback.style.display = 'flex';
           fallback.textContent = safeName.charAt(0).toUpperCase();
         }
