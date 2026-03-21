@@ -8,6 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <!-- Firebase SDK — loaded as regular scripts (more reliable than dynamic import) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <style>
     /* ── DESIGN TOKENS ─────────────────────────────────── */
     :root {
@@ -484,16 +488,13 @@
   <!-- ════════════════════════════════════════════════════════ -->
   <!-- APPLICATION SCRIPT                                       -->
   <!-- ════════════════════════════════════════════════════════ -->
-  <script type="module">
+  <script>
     /* ─────────────────────────────────────────────────────────
      * SECTION 0 — HTTPS ENFORCEMENT
-     * Fix: Bug 2 — replaced window.location.protocol assignment
-     * (unreliable) with a standards-compliant navigation call.
      * ───────────────────────────────────────────────────────── */
     (function enforceHTTPS() {
       if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         const httpsURL = 'https://' + location.host + location.pathname + location.search + location.hash;
-        // Use location.replace so it doesn't pollute history
         try { location.replace(httpsURL); } catch (_) { /* silently ignore on local dev */ }
       }
     })();
@@ -816,7 +817,10 @@
     }
 
     /* ─────────────────────────────────────────────────────────
-     * SECTION 5 — FIREBASE LOADER & AUTH
+     * SECTION 5 — FIREBASE CONFIG
+     * Uses firebase-*-compat.js loaded as <script> tags above.
+     * Compat SDK exposes window.firebase — no dynamic import needed,
+     * no CSP/browser-extension blocking issues.
      * ───────────────────────────────────────────────────────── */
     const FIREBASE_CONFIG = {
       apiKey:            'AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc',
@@ -828,11 +832,10 @@
       measurementId:     'G-9R2C1174BG',
     };
 
-    const AUTH_TIMEOUT_MS = 10_000;
+    const AUTH_TIMEOUT_MS = 10000;
 
     /* ─────────────────────────────────────────────────────────
      * SECTION 6 — APPLICATION BOOTSTRAP
-     * Fix: Bugs 3,4,5,6,7,8,9,10,11 all addressed here
      * ───────────────────────────────────────────────────────── */
     async function bootstrap() {
       /* 0. Detect language & apply translations FIRST */
@@ -846,9 +849,9 @@
       const checkOffline = () => updateOfflineBanner(dom, !navigator.onLine);
       window.addEventListener('online',  checkOffline);
       window.addEventListener('offline', checkOffline);
-      checkOffline(); // initial check
+      checkOffline();
 
-      /* 3. HTTP check — use DOM API, not innerHTML */
+      /* 3. HTTP check */
       if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
         showView(dom, 'view-login');
@@ -856,52 +859,39 @@
         return;
       }
 
-      /* 4. Load Firebase SDK dynamically (CDN failure handled) */
-      let firebaseApp, getAuth, signInWithPopup, GoogleAuthProvider, signOut, browserLocalPersistence, setPersistence, onAuthStateChanged;
-      let cdnLoadTimeout;
-      try {
-        cdnLoadTimeout = setTimeout(() => {
-          throw new Error('CDN_TIMEOUT');
-        }, AUTH_TIMEOUT_MS);
-
-        const [appMod, authMod] = await Promise.all([
-          import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
-          import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js'),
-        ]);
-        clearTimeout(cdnLoadTimeout);
-
-        ({ initializeApp } = appMod);
-        ({ getAuth, signInWithPopup, GoogleAuthProvider, signOut, browserLocalPersistence, setPersistence, onAuthStateChanged } = authMod);
-
-        /* 5. Init Firebase — guard against re-init */
-        let app;
-        const { getApps, initializeApp } = appMod;
-        const existingApps = getApps();
-        app = existingApps.length > 0 ? existingApps[0] : initializeApp(FIREBASE_CONFIG);
-        const auth = getAuth(app);
-
-        /* 6. Set LOCAL persistence BEFORE first auth state check */
-        await setPersistence(auth, browserLocalPersistence);
-
-        /* 7. Boot the auth layer */
-        bootAuth({ dom, auth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged });
-
-      } catch (err) {
-        clearTimeout(cdnLoadTimeout);
+      /* 4. Check the compat SDK loaded correctly via <script> tags */
+      if (typeof firebase === 'undefined' || !firebase.app) {
         if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
         showView(dom, 'view-login');
-        const msg = err?.message === 'CDN_TIMEOUT' ? t.timeout_error : t.cdn_error;
-        showStatus(dom, 'login', msg, 'error', true);
+        showStatus(dom, 'login', t.cdn_error, 'error', true);
         mountRetryButton(dom, () => {
           teardownRetryButton();
           clearStatus(dom, 'login');
-          if (dom['initial-loader']) dom['initial-loader'].style.display = 'flex';
-          showView(dom, null);
-          // Reload the page cleanly (safest retry)
           window.location.reload();
         });
-        announce(msg);
+        announce(t.cdn_error);
+        return;
       }
+
+      /* 5. Init Firebase — guard against re-init */
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(FIREBASE_CONFIG);
+        }
+      } catch (err) {
+        console.error('[PlanAway] Firebase init error:', err);
+      }
+
+      /* 6. Get auth instance and set LOCAL persistence */
+      const auth = firebase.auth();
+      try {
+        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      } catch (err) {
+        console.warn('[PlanAway] setPersistence failed (non-fatal):', err);
+      }
+
+      /* 7. Boot the auth layer */
+      bootAuth({ dom, auth });
     }
 
     /* ─────────────────────────────────────────────────────────
@@ -911,7 +901,7 @@
      * ───────────────────────────────────────────────────────── */
     const TEARDOWN_KEY = Symbol.for('__planaway_teardown__');
 
-    function bootAuth({ dom, auth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }) {
+    function bootAuth({ dom, auth }) {
       /* Abort controller for all non-retry listeners */
       const ac = new AbortController();
       const { signal } = ac;
@@ -922,24 +912,21 @@
       let authInitialized = false;
       let authTimeoutId = null;
 
-      /* Teardown: Fix Bug 9 — use Symbol key, not window property name */
+      /* Teardown */
       function teardown() {
         ac.abort();
         if (authUnsubscribe) { authUnsubscribe(); authUnsubscribe = null; }
         if (authTimeoutId)   { clearTimeout(authTimeoutId); authTimeoutId = null; }
         teardownRetryButton();
-        // Remove from window
         delete window[TEARDOWN_KEY];
       }
 
-      // Expose for SPA / test runners — Fix Bug 9: unique symbol key prevents overwrite
       window[TEARDOWN_KEY] = teardown;
-      // Also expose a stable public name but make it non-configurable to deter overwrite
       try {
         Object.defineProperty(window, 'teardownPlanAway', {
           value: teardown, writable: false, configurable: false,
         });
-      } catch (_) { /* may already be defined on hot-reload */ }
+      } catch (_) { /* hot-reload: already defined */ }
 
       /* Auth state timeout */
       authTimeoutId = setTimeout(() => {
@@ -957,34 +944,21 @@
       }, AUTH_TIMEOUT_MS);
 
       /* ── onAuthStateChanged ── */
-      authUnsubscribe = onAuthStateChanged(auth, (user) => {
+      authUnsubscribe = auth.onAuthStateChanged((user) => {
         authInitialized = true;
         clearTimeout(authTimeoutId);
         if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
 
         if (user) {
-          renderDashboard(dom, user, /* isReturn= */ !signinInProgress);
+          renderDashboard(dom, user, !signinInProgress);
           showView(dom, 'view-dashboard');
           const displayName = (user.displayName || '').trim() || user.email || 'User';
-          if (!signinInProgress) {
-            // Returning user announcement — Fix Bug 4
-            announce(t.returning_user(displayName));
-          } else {
-            announce(t.welcome_back(displayName));
-          }
+          announce(signinInProgress ? t.welcome_back(displayName) : t.returning_user(displayName));
           signinInProgress = false;
-          // Move focus to dashboard heading
-          requestAnimationFrame(() => {
-            const h = dom['dash-heading'];
-            if (h) h.focus();
-          });
+          requestAnimationFrame(() => { const h = dom['dash-heading']; if (h) h.focus(); });
         } else {
           showView(dom, 'view-login');
-          // Move focus to login heading
-          requestAnimationFrame(() => {
-            const h = document.getElementById('login-heading');
-            if (h) h.focus();
-          });
+          requestAnimationFrame(() => { const h = document.getElementById('login-heading'); if (h) h.focus(); });
         }
       });
 
@@ -992,13 +966,11 @@
       const btnSignin = dom['btn-signin'];
       if (btnSignin) {
         btnSignin.addEventListener('click', async () => {
-          // Offline guard
           if (!navigator.onLine) {
             showStatus(dom, 'login', t.offline, 'info');
             announce(t.offline);
             return;
           }
-          // Double-click guard
           if (signinInProgress) return;
           signinInProgress = true;
           btnSignin.disabled = true;
@@ -1006,20 +978,15 @@
           announce(t.signing_in);
 
           try {
-            const provider = new GoogleAuthProvider();
+            const provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
-            await signInWithPopup(auth, provider);
+            await auth.signInWithPopup(provider);
             // onAuthStateChanged handles the rest
           } catch (err) {
             signinInProgress = false;
             btnSignin.disabled = false;
-            // User-cancelled popup — not an error
-            if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-              return;
-            }
-            const msg = err.code === 'auth/popup-blocked'
-              ? t.popup_blocked
-              : t.auth_error;
+            if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') return;
+            const msg = err.code === 'auth/popup-blocked' ? t.popup_blocked : t.auth_error;
             showStatus(dom, 'login', msg, 'error', true);
             mountRetryButton(dom, () => {
               teardownRetryButton();
@@ -1042,9 +1009,8 @@
           clearStatus(dom, 'dash');
           announce(t.signing_out);
           try {
-            await signOut(auth);
+            await auth.signOut();
             signoutInProgress = false;
-            // onAuthStateChanged handles view swap
           } catch (err) {
             signoutInProgress = false;
             btnSignout.disabled = false;
