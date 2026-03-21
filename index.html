@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<!-- Bug 12 Fix: dir="auto" ensures RTL languages (Arabic, Hebrew, etc.) automatically mirror the layout correctly -->
-<html lang="en" dir="auto">
+<!-- Bug 12 Fix: Removed dir="auto". Direction is dynamically set via JS based on the user's browser language to ensure RTL users get a true mirrored layout. -->
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,11 +28,9 @@
             justify-content: center;
             align-items: center;
             
-            /* Bug 13 Fix & Doc: progressive enhancement for mobile viewports */
-            /* 100vh is the fallback for older browsers (IE, old Safari/Chrome) */
-            min-height: 100vh;
-            /* 100dvh dynamically adjusts when the mobile keyboard/address bar appears, preventing layout clipping */
-            min-height: 100dvh; 
+            /* Progressive enhancement for mobile viewports */
+            min-height: 100vh; /* Fallback for older browsers */
+            min-height: 100dvh; /* Prevents keyboard clipping on modern mobile browsers */
             
             margin: 0;
             padding: 1rem;
@@ -81,27 +79,39 @@
             justify-content: center;
             align-items: center;
             gap: 10px;
+            margin-bottom: 10px;
         }
 
         button:hover:not(:disabled) { background-color: var(--accent-color); }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         
+        /* Secondary Button (Retry) */
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background-color: rgba(47, 79, 79, 0.1);
+        }
+
         /* Spinner */
         .spinner {
             border: 3px solid rgba(255,255,255,0.3);
-            border-top: 3px solid white;
+            border-top: 3px solid var(--primary-color);
             border-radius: 50%;
             width: 16px;
             height: 16px;
             animation: spin 1s linear infinite;
+        }
+        .btn-spinner {
+            border-top: 3px solid white;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         .global-spinner {
             width: 40px;
             height: 40px;
-            border-color: rgba(47, 79, 79, 0.2);
-            border-top-color: var(--primary-color);
             margin: 0 auto 1rem auto;
         }
 
@@ -110,7 +120,7 @@
         .error-message { 
             color: var(--error-color); 
             font-size: 14px; 
-            margin-top: 15px; 
+            margin-bottom: 15px; 
             padding: 10px;
             background: #ffebee;
             border-radius: 4px;
@@ -143,19 +153,20 @@
             <p>Loading your planner...</p>
         </div>
         
-        <!-- Bug 4 Fix: Global Error Boundary UI -->
+        <!-- Global Error Boundary UI -->
         <div id="init-error" class="error-message hidden" role="alert"></div>
+        <!-- Bug 11 Fix: Retry button for CDN drops or Firebase timeouts -->
+        <button id="retry-btn" class="btn-secondary hidden">Try Again</button>
 
         <!-- Login View -->
         <div id="login-view" class="hidden">
             <h1 id="login-heading" tabindex="-1">🏕️ Outdoor Planner</h1>
             <p>Plan your Camp, RV Trip, or Picnic effortlessly.</p>
             
-            <!-- Bug 10 Fix: Explicit aria-label overrides internal SVG and text for screen readers -->
             <button id="login-btn" aria-label="Continue with Google">
                 <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2045c0-.6381-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9086c1.7018-1.5668 2.6836-3.874 2.6836-6.615z"></path><path fill="#34A853" d="M9 18c2.43 0 4.4673-.806 5.9564-2.1805l-2.9086-2.2581c-.8059.54-1.8368.859-3.0478.859-2.344 0-4.3282-1.5831-5.036-3.7104H.9574v2.3318C2.4382 15.9832 5.4818 18 9 18z"></path><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.2822-1.1168-.2822-1.71s.1023-1.17.2823-1.71V4.9582H.9573A8.9965 8.9965 0 0 0 0 9c0 1.4523.3477 2.8268.9573 4.0418L3.964 10.71z"></path><path fill="#EA4335" d="M9 3.5795c1.3214 0 2.5077.4541 3.4405 1.346l2.5813-2.5814C13.4632.8918 11.426 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.964 7.29C4.6718 5.1627 6.6559 3.5795 9 3.5795z"></path></svg>
                 <span aria-hidden="true">Continue with Google</span>
-                <div class="spinner hidden" id="login-spinner" aria-hidden="true"></div>
+                <div class="spinner btn-spinner hidden" id="login-spinner" aria-hidden="true"></div>
             </button>
             <div id="login-error" class="error-message hidden" role="alert"></div>
         </div>
@@ -169,77 +180,127 @@
             
             <button id="logout-btn">
                 Log Out
-                <div class="spinner hidden" id="logout-spinner" aria-hidden="true"></div>
+                <div class="spinner btn-spinner hidden" id="logout-spinner" aria-hidden="true"></div>
             </button>
             <div id="logout-error" class="error-message hidden" role="alert"></div>
         </div>
     </div>
 
     <script type="module">
-        /*
-         * BUG HISTORY & FIXES LOG
+        /**
+         * BUG HISTORY & FIXES LOG (30 Bugs Fixed)
          * ---------------------------------------------------------------------------------------------------
-         * [Previous 18 Bugs]: Fixed race conditions, memory leaks, explicit session persistence, 
-         * replaced alert() dialogs, personalized dashboard, blocked spam clicks, fixed mobile flex layouts,
-         * offline checking, aria-hidden properties on SVG/spinners, removed inline CSS.
+         * ITERATION 1 (18 Bugs):
+         * Fixed App Crash on Hot Reload, Fixed SPA Memory Leak, Fixed Returning User Focus, 
+         * Added CDN Error Boundary, Fixed Safari ITP breakage, Fixed Infinite Spinner, 
+         * Synced Device Language, Fixed Broken Photo UI, Added Explicit aria-labels, 
+         * Handled Blank displayNames, Added dvh fallback, etc.
          * 
-         * [Bug 1]: Fixed App Crash on Hot Reload (Added getApps() check before initializeApp).
-         * [Bug 2]: Fixed Memory Leak (Exposed unsubscribeAuth to window for proper teardown).
-         * [Bug 3]: Fixed Returning User Focus (Added logic for previousAuthState === null).
-         *[Bug 4]: Added Error Boundary (Used dynamic imports wrapped in try/catch to handle CDN blocks).
-         * [Bug 5]: Fixed Safari ITP breakage (Removed popupRedirectResolver from initializeAuth).
-         *[Bug 6]: Fixed Infinite Spinner (Added 10s authTimeout fallback for slow/hanging connections).
-         *[Bug 7]: Fixed Language Sync (Called auth.useDeviceLanguage() immediately upon init).
-         * [Bug 8]: Fixed Broken Image UI (Added userPhoto.onerror handler).
-         * [Bug 9]: Fixed SR Announcement repetitions (Cleared srAnnouncer before updating with setTimeout).
-         * [Bug 10]: Fixed SR SVG reading (Added aria-label="Continue with Google" on button).
-         * [Bug 11]: Fixed Blank Name for " " displayNames (Added .trim() and length > 0 checks).
-         * [Bug 12]: Fixed RTL Layout (Added dir="auto" to <html> tag).
-         * [Bug 13]: Fixed dvh undocumented issue (Added rich CSS comments for future maintainers).
-         * [Bug 14]: Fixed HTTPS strict enforcement (Added window.location.protocol check).
+         * ITERATION 2 (12 New Bugs Fixed):
+         * [Bug 1]: Fixed DOM Queries. Now executed inside an init routine guaranteeing elements exist.
+         * [Bug 2]: Fixed unsubscribeAuth leak. Added 'beforeunload' event listener for genuine SPA teardown.
+         * [Bug 3]: Fixed authTimeout clash. clearTimeout(authTimeout) is explicitly called inside the try/catch.
+         * [Bug 4]: Fixed stale error text flashes. Cleared .textContent *before* making the element visible.
+         * [Bug 5]: Fixed userPhoto.onerror reassignment leak. Mapped strictly once during setup phase.
+         * [Bug 6]: Fixed 50ms Screen Reader Magic Number. Fixed by appending a new DOM node dynamically.
+         * [Bug 7]: Fixed Active Buttons on Failure. Disabled buttons via state logic if init catches.
+         * [Bug 8]: Fixed HTTPS Unhandled Exception. Used a graceful `return` and UI display instead of `throw`.
+         * [Bug 9]: Fixed Static Profile `alt` Text. Dynamically updates `alt` to "Profile photo of [Name]".
+         * [Bug 10]: Fixed `role="alert"` timing. Set text inside DOM elements *before* removing `.hidden`.
+         *[Bug 11]: Fixed No Retry on Timeout/CDN drop. Added explicit Retry button that resets and re-calls initApp.
+         * [Bug 12]: Fixed RTL `dir="auto"`. Explicitly map RTL layout to browser's true language locale.
          * ---------------------------------------------------------------------------------------------------
          */
 
-        // DOM Elements
-        const appLoading = document.getElementById('app-loading');
-        const initError = document.getElementById('init-error');
-        const loginView = document.getElementById('login-view');
-        const dashboardView = document.getElementById('dashboard-view');
-        
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const loginSpinner = document.getElementById('login-spinner');
-        const logoutSpinner = document.getElementById('logout-spinner');
-        
-        const userNameDisplay = document.getElementById('user-name');
-        const userEmailDisplay = document.getElementById('user-email');
-        const userPhoto = document.getElementById('user-photo');
-        
-        const loginError = document.getElementById('login-error');
-        const logoutError = document.getElementById('logout-error');
-        
-        const loginHeading = document.getElementById('login-heading');
-        const dashboardHeading = document.getElementById('dashboard-heading');
-        const srAnnouncer = document.getElementById('sr-announcer');
+        const DOM = {};
+        let authTimeout;
+        let isAuthResolved = false;
+        let previousAuthState = null;
 
-        // Bug 14 Fix: Enforce HTTPS for Google Auth
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        if (window.location.protocol !== 'https:' && !isLocalhost) {
-            appLoading.classList.add('hidden');
-            initError.textContent = "Security Error: This application requires an HTTPS connection for secure sign-in.";
-            initError.classList.remove('hidden');
-            throw new Error("Insecure context blocked.");
+        // Bootstrap App Setup
+        function bootstrap() {
+            // Bug 1 Fix: All DOM Queries happen synchronously after document load
+            DOM.appLoading = document.getElementById('app-loading');
+            DOM.initError = document.getElementById('init-error');
+            DOM.retryBtn = document.getElementById('retry-btn');
+            DOM.loginView = document.getElementById('login-view');
+            DOM.dashboardView = document.getElementById('dashboard-view');
+            DOM.loginBtn = document.getElementById('login-btn');
+            DOM.logoutBtn = document.getElementById('logout-btn');
+            DOM.loginSpinner = document.getElementById('login-spinner');
+            DOM.logoutSpinner = document.getElementById('logout-spinner');
+            DOM.userNameDisplay = document.getElementById('user-name');
+            DOM.userEmailDisplay = document.getElementById('user-email');
+            DOM.userPhoto = document.getElementById('user-photo');
+            DOM.loginError = document.getElementById('login-error');
+            DOM.logoutError = document.getElementById('logout-error');
+            DOM.loginHeading = document.getElementById('login-heading');
+            DOM.dashboardHeading = document.getElementById('dashboard-heading');
+            DOM.srAnnouncer = document.getElementById('sr-announcer');
+
+            // Bug 12 Fix: Robust RTL support based on actual browser locale
+            const userLang = navigator.language.split('-')[0];
+            const rtlLangs = ['ar', 'he', 'fa', 'ur'];
+            if (rtlLangs.includes(userLang)) {
+                document.documentElement.dir = 'rtl';
+            }
+
+            // Bug 5 Fix: Assign onerror exactly once
+            DOM.userPhoto.onerror = function() {
+                this.classList.add('hidden');
+            };
+
+            DOM.retryBtn.addEventListener('click', () => {
+                DOM.initError.classList.add('hidden');
+                DOM.retryBtn.classList.add('hidden');
+                DOM.appLoading.classList.remove('hidden');
+                initApp();
+            });
+
+            // Ensure proper memory teardown (Bug 2 Fix)
+            window.addEventListener('beforeunload', () => {
+                if (typeof window.unsubscribeAuth === 'function') {
+                    window.unsubscribeAuth();
+                }
+            });
+
+            // Bug 8 Fix: Graceful HTTPS check (avoids throwing Unhandled Exceptions to monitoring tools)
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (window.location.protocol !== 'https:' && !isLocalhost) {
+                DOM.appLoading.classList.add('hidden');
+                DOM.initError.textContent = "Security Error: HTTPS connection required for secure sign-in.";
+                DOM.initError.classList.remove('hidden');
+                return;
+            }
+
+            initApp();
         }
 
-        // Bug 9 Fix: Helper to ensure screen readers always catch state changes
+        // Bug 6 Fix: Rock-solid screen reader announcement by creating new nodes
         function announceToScreenReader(message) {
-            srAnnouncer.textContent = ''; // Clear old content
-            setTimeout(() => { srAnnouncer.textContent = message; }, 50); // Re-inject to force announcement
+            DOM.srAnnouncer.innerHTML = ''; 
+            const msgNode = document.createElement('div');
+            msgNode.textContent = message;
+            DOM.srAnnouncer.appendChild(msgNode);
         }
 
         async function initApp() {
+            isAuthResolved = false;
+            if (authTimeout) clearTimeout(authTimeout);
+
+            // Bug 3 & Bug 7 Fix: Set fallback for Firebase network hang, disable buttons
+            authTimeout = setTimeout(() => {
+                if (!isAuthResolved) {
+                    DOM.appLoading.classList.add('hidden');
+                    DOM.initError.textContent = "Connection is slow. Authentication is taking too long to respond.";
+                    DOM.initError.classList.remove('hidden');
+                    DOM.retryBtn.classList.remove('hidden');
+                    DOM.loginBtn.disabled = true;
+                    DOM.logoutBtn.disabled = true;
+                }
+            }, 10000);
+
             try {
-                // Bug 4 Fix: Dynamic imports act as an Error Boundary against CDN/Ad-blocker failures
                 const { initializeApp, getApps, getApp } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js");
                 const { 
                     initializeAuth, 
@@ -262,73 +323,58 @@
                     measurementId: "G-9R2C1174BG"
                 };
 
-                // Bug 1 Fix: Re-initialization guard for SPAs and Hot-Reload environments
                 let app, auth;
                 if (!getApps().length) {
                     app = initializeApp(firebaseConfig);
-                    // Bug 5 Fix: Removed `browserPopupRedirectResolver` from here to prevent Safari ITP crash
-                    auth = initializeAuth(app, {
-                        persistence: browserLocalPersistence
-                    });
+                    auth = initializeAuth(app, { persistence: browserLocalPersistence });
                 } else {
                     app = getApp();
                     auth = getAuth(app);
                 }
 
-                // Bug 7 Fix: Called immediately after auth creation
                 auth.useDeviceLanguage();
                 const provider = new GoogleAuthProvider();
 
-                let isAuthResolved = false;
-                let previousAuthState = null;
-
-                // Bug 6 Fix: Fallback timeout if Firebase backend hangs
-                const authTimeout = setTimeout(() => {
-                    if (!isAuthResolved) {
-                        appLoading.classList.add('hidden');
-                        initError.textContent = "Connection is slow. Firebase authentication is taking too long to respond. Please check your network and refresh.";
-                        initError.classList.remove('hidden');
-                    }
-                }, 10000);
-
-                // Bug 2 Fix: Expose unsubscribe to global scope for memory leak prevention in SPA frameworks
                 window.unsubscribeAuth = onAuthStateChanged(auth, (user) => {
                     isAuthResolved = true;
-                    clearTimeout(authTimeout);
-                    appLoading.classList.add('hidden');
+                    clearTimeout(authTimeout); // Clears timeout properly upon successful init
+                    
+                    DOM.appLoading.classList.add('hidden');
+                    DOM.loginBtn.disabled = false; // Restore button state if previously failed
+                    DOM.logoutBtn.disabled = false;
 
                     if (user) {
-                        // Bug 11 Fix: Safe displayName handling for blank-space anomalies
                         let name = user.displayName ? user.displayName.trim() : '';
-                        userNameDisplay.textContent = name.length > 0 ? name.split(' ')[0] : 'Camper';
-                        userEmailDisplay.textContent = `Logged in as ${user.email}`;
+                        let displayFirstName = name.length > 0 ? name.split(' ')[0] : 'Camper';
+                        
+                        DOM.userNameDisplay.textContent = displayFirstName;
+                        DOM.userEmailDisplay.textContent = `Logged in as ${user.email}`;
                         
                         if (user.photoURL) {
-                            userPhoto.src = user.photoURL;
-                            userPhoto.classList.remove('hidden');
-                            // Bug 8 Fix: Fallback if Google photo CDN returns 404/403
-                            userPhoto.onerror = () => userPhoto.classList.add('hidden');
+                            DOM.userPhoto.src = user.photoURL;
+                            // Bug 9 Fix: Personalized alt text for screen readers
+                            DOM.userPhoto.alt = `Profile photo of ${displayFirstName}`;
+                            DOM.userPhoto.classList.remove('hidden');
                         } else {
-                            userPhoto.classList.add('hidden');
+                            DOM.userPhoto.classList.add('hidden');
                         }
 
-                        loginView.classList.add('hidden');
-                        dashboardView.classList.remove('hidden');
+                        DOM.loginView.classList.add('hidden');
+                        DOM.dashboardView.classList.remove('hidden');
 
-                        // Bug 3 Fix: Handle focus/announcements even for returning users on first load
                         if (previousAuthState !== true) {
-                            if (previousAuthState !== null) dashboardHeading.focus();
+                            if (previousAuthState !== null) DOM.dashboardHeading.focus();
                             announceToScreenReader("Successfully signed in. Welcome to your dashboard.");
                         }
                         previousAuthState = true;
 
                     } else {
-                        dashboardView.classList.add('hidden');
-                        loginView.classList.remove('hidden');
+                        DOM.dashboardView.classList.add('hidden');
+                        DOM.loginView.classList.remove('hidden');
 
                         if (previousAuthState !== false) {
                             if (previousAuthState !== null) {
-                                loginHeading.focus();
+                                DOM.loginHeading.focus();
                                 announceToScreenReader("Successfully signed out.");
                             } else {
                                 announceToScreenReader("Login page loaded.");
@@ -338,67 +384,78 @@
                     }
                 });
 
-                // Login Logic
-                loginBtn.addEventListener('click', async () => {
-                    loginError.classList.add('hidden');
+                // Attach Handlers (Replacing previous to avoid duplicates on retry)
+                DOM.loginBtn.onclick = async () => {
+                    DOM.loginError.classList.add('hidden');
+                    // Bug 4 Fix: Clear stale text BEFORE making it visible
+                    DOM.loginError.textContent = '';
 
                     if (!navigator.onLine) {
-                        loginError.textContent = "You appear to be offline. Please check your connection.";
-                        loginError.classList.remove('hidden');
+                        // Bug 10 Fix: Text set BEFORE removing hidden, ensuring screen reader fires accurately
+                        DOM.loginError.textContent = "You appear to be offline. Please check your connection.";
+                        DOM.loginError.classList.remove('hidden');
                         return;
                     }
 
-                    loginBtn.disabled = true;
-                    loginSpinner.classList.remove('hidden');
+                    DOM.loginBtn.disabled = true;
+                    DOM.loginSpinner.classList.remove('hidden');
 
                     try {
-                        // Bug 5 Fix: Resolver passed dynamically ONLY at the time of popup call
                         await signInWithPopup(auth, provider, browserPopupRedirectResolver);
                     } catch (error) {
-                        console.error("Login Error:", error);
-                        
                         const ignoredErrors =['auth/popup-closed-by-user', 'auth/cancelled-popup-request'];
                         if (!ignoredErrors.includes(error.code)) {
-                            loginError.textContent = error.code === 'auth/network-request-failed' 
+                            DOM.loginError.textContent = error.code === 'auth/network-request-failed' 
                                 ? "Network error. Please check your internet connection." 
                                 : "Failed to sign in. Please try again.";
-                            loginError.classList.remove('hidden');
+                            DOM.loginError.classList.remove('hidden');
                         }
                     } finally {
-                        loginBtn.disabled = false;
-                        loginSpinner.classList.add('hidden');
+                        DOM.loginBtn.disabled = false;
+                        DOM.loginSpinner.classList.add('hidden');
                     }
-                });
+                };
 
-                // Logout Logic
-                logoutBtn.addEventListener('click', async () => {
-                    logoutError.classList.add('hidden');
-                    logoutBtn.disabled = true;
-                    logoutSpinner.classList.remove('hidden');
+                DOM.logoutBtn.onclick = async () => {
+                    DOM.logoutError.classList.add('hidden');
+                    DOM.logoutError.textContent = '';
+                    
+                    DOM.logoutBtn.disabled = true;
+                    DOM.logoutSpinner.classList.remove('hidden');
 
                     try {
                         await signOut(auth);
                     } catch (error) {
-                        console.error("Logout Error:", error);
-                        logoutError.textContent = "Failed to log out safely. Please check your connection.";
-                        logoutError.classList.remove('hidden');
+                        DOM.logoutError.textContent = "Failed to log out safely. Please check your connection.";
+                        DOM.logoutError.classList.remove('hidden');
                     } finally {
-                        logoutBtn.disabled = false;
-                        logoutSpinner.classList.add('hidden');
+                        DOM.logoutBtn.disabled = false;
+                        DOM.logoutSpinner.classList.add('hidden');
                     }
-                });
+                };
 
             } catch (error) {
-                // Bug 4 Fix: Graceful handling if CDN / Import fails
-                appLoading.classList.add('hidden');
-                initError.textContent = "Failed to load application modules. Please disable ad-blockers or check your connection, then refresh.";
-                initError.classList.remove('hidden');
+                // Bug 3 Fix: Clear timeout so it doesn't overwrite this message
+                clearTimeout(authTimeout);
+                DOM.appLoading.classList.add('hidden');
+                
+                // Bug 10 Fix: Set text before making visible
+                DOM.initError.textContent = "Failed to load application modules. Please disable ad-blockers or check your connection.";
+                DOM.initError.classList.remove('hidden');
+                
+                // Bug 11 Fix: Display retry option
+                DOM.retryBtn.classList.remove('hidden');
+                
+                // Bug 7 Fix: Ensure UI buttons don't appear falsely active
+                if(DOM.loginBtn) DOM.loginBtn.disabled = true;
+                if(DOM.logoutBtn) DOM.logoutBtn.disabled = true;
+                
                 console.error("Initialization Error:", error);
             }
         }
 
-        // Boot the app safely
-        initApp();
+        // Initialize application once document is fully parsed
+        document.addEventListener('DOMContentLoaded', bootstrap);
     </script>
 </body>
 </html>
