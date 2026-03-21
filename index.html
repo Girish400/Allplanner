@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Bug 12 Fix: Removed dir="auto". Direction is dynamically set via JS based on the user's browser language to ensure RTL users get a true mirrored layout. -->
+<!-- Direction and Language are now set dynamically via JS to fully support i18n and RTL -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -29,8 +29,8 @@
             align-items: center;
             
             /* Progressive enhancement for mobile viewports */
-            min-height: 100vh; /* Fallback for older browsers */
-            min-height: 100dvh; /* Prevents keyboard clipping on modern mobile browsers */
+            min-height: 100vh;
+            min-height: 100dvh; 
             
             margin: 0;
             padding: 1rem;
@@ -48,21 +48,29 @@
 
         /* Focus management for accessibility */
         h1:focus { outline: none; }
-        button:focus-visible {
+        button:focus-visible, a:focus-visible {
             outline: var(--focus-ring);
             outline-offset: 2px;
         }
 
-        h1 { color: var(--primary-color); margin-top: 0; }
-        p { color: #666; margin-bottom: 2rem; line-height: 1.5; }
+        h1 { color: var(--primary-color); margin-top: 0; margin-bottom: 0.5rem; }
+        p { color: #666; margin-bottom: 1.5rem; line-height: 1.5; margin-top: 0;}
+
+        /* Bug 8 Fix: Flex column with gap eliminates collapsed margin spacing issues when the photo is hidden */
+        .view-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
 
         .profile-pic {
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            margin-bottom: 1rem;
             object-fit: cover;
             border: 2px solid var(--primary-color);
+            /* Removed margin-bottom, relying on parent's flex gap */
         }
 
         button {
@@ -79,13 +87,11 @@
             justify-content: center;
             align-items: center;
             gap: 10px;
-            margin-bottom: 10px;
         }
 
         button:hover:not(:disabled) { background-color: var(--accent-color); }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         
-        /* Secondary Button (Retry) */
         .btn-secondary {
             background-color: transparent;
             color: var(--primary-color);
@@ -93,6 +99,15 @@
         }
         .btn-secondary:hover:not(:disabled) {
             background-color: rgba(47, 79, 79, 0.1);
+        }
+
+        .action-link {
+            color: var(--accent-color);
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 10px;
+            display: inline-block;
         }
 
         /* Spinner */
@@ -120,12 +135,12 @@
         .error-message { 
             color: var(--error-color); 
             font-size: 14px; 
-            margin-bottom: 15px; 
             padding: 10px;
             background: #ffebee;
             border-radius: 4px;
-            border-left: 4px solid var(--error-color);
-            text-align: left;
+            border-inline-start: 4px solid var(--error-color); /* Logical property supports RTL natively */
+            text-align: start; /* Logical property supports RTL natively */
+            width: 100%;
         }
 
         .sr-only {
@@ -148,38 +163,39 @@
 
     <div class="container">
         <!-- Initial Loading State -->
-        <div id="app-loading">
+        <div id="app-loading" class="view-wrapper">
             <div class="spinner global-spinner" aria-hidden="true"></div>
-            <p>Loading your planner...</p>
+            <p data-i18n="loading">Loading your planner...</p>
         </div>
         
         <!-- Global Error Boundary UI -->
         <div id="init-error" class="error-message hidden" role="alert"></div>
-        <!-- Bug 11 Fix: Retry button for CDN drops or Firebase timeouts -->
-        <button id="retry-btn" class="btn-secondary hidden">Try Again</button>
+        
+        <!-- Bug 11 Fix: Retry button contextually linked via aria-describedby -->
+        <button id="retry-btn" class="btn-secondary hidden" aria-describedby="init-error" data-i18n="try_again">Try Again</button>
 
         <!-- Login View -->
-        <div id="login-view" class="hidden">
-            <h1 id="login-heading" tabindex="-1">🏕️ Outdoor Planner</h1>
-            <p>Plan your Camp, RV Trip, or Picnic effortlessly.</p>
+        <div id="login-view" class="view-wrapper hidden">
+            <h1 id="login-heading" tabindex="-1">🏕️ <span data-i18n="app_title">Outdoor Planner</span></h1>
+            <p data-i18n="app_desc">Plan your Camp, RV Trip, or Picnic effortlessly.</p>
             
-            <button id="login-btn" aria-label="Continue with Google">
+            <button id="login-btn" data-i18n-aria="login_aria" aria-label="Continue with Google">
                 <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2045c0-.6381-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9086c1.7018-1.5668 2.6836-3.874 2.6836-6.615z"></path><path fill="#34A853" d="M9 18c2.43 0 4.4673-.806 5.9564-2.1805l-2.9086-2.2581c-.8059.54-1.8368.859-3.0478.859-2.344 0-4.3282-1.5831-5.036-3.7104H.9574v2.3318C2.4382 15.9832 5.4818 18 9 18z"></path><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.2822-1.1168-.2822-1.71s.1023-1.17.2823-1.71V4.9582H.9573A8.9965 8.9965 0 0 0 0 9c0 1.4523.3477 2.8268.9573 4.0418L3.964 10.71z"></path><path fill="#EA4335" d="M9 3.5795c1.3214 0 2.5077.4541 3.4405 1.346l2.5813-2.5814C13.4632.8918 11.426 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.964 7.29C4.6718 5.1627 6.6559 3.5795 9 3.5795z"></path></svg>
-                <span aria-hidden="true">Continue with Google</span>
+                <span aria-hidden="true" data-i18n="login_btn">Continue with Google</span>
                 <div class="spinner btn-spinner hidden" id="login-spinner" aria-hidden="true"></div>
             </button>
             <div id="login-error" class="error-message hidden" role="alert"></div>
         </div>
 
         <!-- Dashboard View -->
-        <div id="dashboard-view" class="hidden">
+        <div id="dashboard-view" class="view-wrapper hidden">
             <img id="user-photo" src="" alt="User Profile" class="profile-pic hidden" />
-            <h1 id="dashboard-heading" tabindex="-1">Welcome, <span id="user-name"></span>! 🎒</h1>
+            <h1 id="dashboard-heading" tabindex="-1"><span data-i18n="welcome">Welcome</span>, <span id="user-name"></span>! 🎒</h1>
             <p id="user-email" class="sr-only"></p>
-            <p>Ready to plan your next adventure?</p>
+            <p data-i18n="ready_prompt">Ready to plan your next adventure?</p>
             
             <button id="logout-btn">
-                Log Out
+                <span data-i18n="logout_btn">Log Out</span>
                 <div class="spinner btn-spinner hidden" id="logout-spinner" aria-hidden="true"></div>
             </button>
             <div id="logout-error" class="error-message hidden" role="alert"></div>
@@ -188,27 +204,24 @@
 
     <script type="module">
         /**
-         * BUG HISTORY & FIXES LOG (30 Bugs Fixed)
+         * BUG HISTORY & FIXES LOG (42 Bugs Fixed)
          * ---------------------------------------------------------------------------------------------------
-         * ITERATION 1 (18 Bugs):
-         * Fixed App Crash on Hot Reload, Fixed SPA Memory Leak, Fixed Returning User Focus, 
-         * Added CDN Error Boundary, Fixed Safari ITP breakage, Fixed Infinite Spinner, 
-         * Synced Device Language, Fixed Broken Photo UI, Added Explicit aria-labels, 
-         * Handled Blank displayNames, Added dvh fallback, etc.
+         * ITERATION 1 (18 Bugs): Memory Leaks, Race Conditions, Safari ITP, Broken Images, Screen Reader Sync.
+         * ITERATION 2 (12 Bugs): DOM query sequence, Retry flashes, HTTPS Unhandled Throws, RTL `dir="auto"` fixes.
          * 
-         * ITERATION 2 (12 New Bugs Fixed):
-         * [Bug 1]: Fixed DOM Queries. Now executed inside an init routine guaranteeing elements exist.
-         * [Bug 2]: Fixed unsubscribeAuth leak. Added 'beforeunload' event listener for genuine SPA teardown.
-         * [Bug 3]: Fixed authTimeout clash. clearTimeout(authTimeout) is explicitly called inside the try/catch.
-         * [Bug 4]: Fixed stale error text flashes. Cleared .textContent *before* making the element visible.
-         * [Bug 5]: Fixed userPhoto.onerror reassignment leak. Mapped strictly once during setup phase.
-         * [Bug 6]: Fixed 50ms Screen Reader Magic Number. Fixed by appending a new DOM node dynamically.
-         * [Bug 7]: Fixed Active Buttons on Failure. Disabled buttons via state logic if init catches.
-         * [Bug 8]: Fixed HTTPS Unhandled Exception. Used a graceful `return` and UI display instead of `throw`.
-         * [Bug 9]: Fixed Static Profile `alt` Text. Dynamically updates `alt` to "Profile photo of [Name]".
-         * [Bug 10]: Fixed `role="alert"` timing. Set text inside DOM elements *before* removing `.hidden`.
-         *[Bug 11]: Fixed No Retry on Timeout/CDN drop. Added explicit Retry button that resets and re-calls initApp.
-         * [Bug 12]: Fixed RTL `dir="auto"`. Explicitly map RTL layout to browser's true language locale.
+         * ITERATION 3 (12 New Bugs Fixed):
+         *[Bug 1]: Fixed `previousAuthState` not resetting on retry.
+         * [Bug 2]: Fixed `unsubscribeAuth` orphaned on retry (cleared explicitly in `initApp`).
+         * [Bug 3]: Fixed SPA Teardown. Replaced weak `beforeunload` with exported `window.teardownApp` for SPA routers.
+         * [Bug 4]: Fixed disabled buttons visually conflicting with Retry context (buttons are now hidden during retry).
+         * [Bug 5]: Fixed Incomplete RTL list. Expanded array to include Pashto, Sindhi, Yiddish, Divehi, Kurdish.
+         * [Bug 6]: Fixed JAWS SR mutation drop. Used delayed node re-creation to guarantee read-out.
+         * [Bug 7]: Fixed missing null checks. `bootstrap()` now verifies all DOM IDs strictly.
+         * [Bug 8]: Fixed Dashboard Gap. Swapped CSS `margin-bottom` for flexbox `gap` handling.
+         * [Bug 9]: Fixed HTTPS Unactionable Error. Generated an actionable hyperlink to trigger an HTTPS reload.
+         * [Bug 10]: Fixed `.onclick` overriding. Switched to `addEventListener` managed by `AbortController`.
+         * [Bug 11]: Fixed Retry Context. Added `aria-describedby` linking Retry button to the exact error node.
+         * [Bug 12]: Fixed Hardcoded English in RTL. Built lightweight `i18n` engine mapping strings accurately.
          * ---------------------------------------------------------------------------------------------------
          */
 
@@ -216,101 +229,191 @@
         let authTimeout;
         let isAuthResolved = false;
         let previousAuthState = null;
+        let eventAbortController = null; // Bug 10 Fix
 
-        // Bootstrap App Setup
-        function bootstrap() {
-            // Bug 1 Fix: All DOM Queries happen synchronously after document load
-            DOM.appLoading = document.getElementById('app-loading');
-            DOM.initError = document.getElementById('init-error');
-            DOM.retryBtn = document.getElementById('retry-btn');
-            DOM.loginView = document.getElementById('login-view');
-            DOM.dashboardView = document.getElementById('dashboard-view');
-            DOM.loginBtn = document.getElementById('login-btn');
-            DOM.logoutBtn = document.getElementById('logout-btn');
-            DOM.loginSpinner = document.getElementById('login-spinner');
-            DOM.logoutSpinner = document.getElementById('logout-spinner');
-            DOM.userNameDisplay = document.getElementById('user-name');
-            DOM.userEmailDisplay = document.getElementById('user-email');
-            DOM.userPhoto = document.getElementById('user-photo');
-            DOM.loginError = document.getElementById('login-error');
-            DOM.logoutError = document.getElementById('logout-error');
-            DOM.loginHeading = document.getElementById('login-heading');
-            DOM.dashboardHeading = document.getElementById('dashboard-heading');
-            DOM.srAnnouncer = document.getElementById('sr-announcer');
+        // Bug 12 Fix: Minimal i18n Dictionary
+        const i18nDict = {
+            en: {
+                loading: "Loading your planner...",
+                try_again: "Try Again",
+                app_title: "Outdoor Planner",
+                app_desc: "Plan your Camp, RV Trip, or Picnic effortlessly.",
+                login_btn: "Continue with Google",
+                login_aria: "Continue with Google",
+                welcome: "Welcome",
+                ready_prompt: "Ready to plan your next adventure?",
+                logout_btn: "Log Out",
+                offline_err: "You appear to be offline. Please check your connection.",
+                network_err: "Network error. Please check your internet connection.",
+                generic_login_err: "Failed to sign in. Please try again.",
+                generic_logout_err: "Failed to log out safely. Please check your connection.",
+                slow_conn: "Connection is slow. Authentication is taking too long to respond.",
+                load_err: "Failed to load application modules. Please check your connection.",
+                https_err: "Security Error: HTTPS connection required.",
+                reload_https: "Click here to securely reload via HTTPS."
+            },
+            ar: {
+                loading: "جاري تحميل مخططك...",
+                try_again: "حاول مرة أخرى",
+                app_title: "مخطط الرحلات الخارجية",
+                app_desc: "خطط لمخيمك، رحلتك في المنزل المتنقل، أو نزهتك بسهولة.",
+                login_btn: "المتابعة باستخدام Google",
+                login_aria: "المتابعة باستخدام حساب Google",
+                welcome: "مرحباً",
+                ready_prompt: "هل أنت مستعد للتخطيط لمغامرتك القادمة؟",
+                logout_btn: "تسجيل الخروج",
+                offline_err: "يبدو أنك غير متصل بالإنترنت. يرجى التحقق من اتصالك.",
+                network_err: "خطأ في الشبكة. يرجى التحقق من اتصالك بالإنترنت.",
+                generic_login_err: "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+                generic_logout_err: "فشل تسجيل الخروج بأمان. يرجى التحقق من اتصالك.",
+                slow_conn: "الاتصال بطيء. المصادقة تستغرق وقتًا أطول من المعتاد.",
+                load_err: "فشل تحميل وحدات التطبيق. يرجى التحقق من اتصالك.",
+                https_err: "خطأ أمني: يتطلب اتصال HTTPS.",
+                reload_https: "انقر هنا لإعادة التحميل بأمان عبر HTTPS."
+            }
+        };
 
-            // Bug 12 Fix: Robust RTL support based on actual browser locale
+        let currentLang = 'en';
+
+        // Bug 7 Fix: Strict DOM Extraction & Validation
+        function extractDOM() {
+            const ids =[
+                'app-loading', 'init-error', 'retry-btn', 'login-view', 'dashboard-view',
+                'login-btn', 'logout-btn', 'login-spinner', 'logout-spinner', 'user-name',
+                'user-email', 'user-photo', 'login-error', 'logout-error', 'login-heading',
+                'dashboard-heading', 'sr-announcer'
+            ];
+            
+            for (const id of ids) {
+                const el = document.getElementById(id);
+                if (!el) throw new Error(`Critical Exception: Required DOM element missing (#${id})`);
+                
+                // Convert kebab-case to camelCase for JS object mapping
+                const camelKey = id.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                DOM[camelKey] = el;
+            }
+        }
+
+        function applyI18n() {
             const userLang = navigator.language.split('-')[0];
-            const rtlLangs = ['ar', 'he', 'fa', 'ur'];
+            
+            // Bug 5 Fix: Comprehensive RTL language list
+            const rtlLangs =['ar', 'he', 'fa', 'ur', 'ps', 'sd', 'yi', 'dv', 'ckb'];
+            
             if (rtlLangs.includes(userLang)) {
                 document.documentElement.dir = 'rtl';
             }
-
-            // Bug 5 Fix: Assign onerror exactly once
-            DOM.userPhoto.onerror = function() {
-                this.classList.add('hidden');
-            };
-
-            DOM.retryBtn.addEventListener('click', () => {
-                DOM.initError.classList.add('hidden');
-                DOM.retryBtn.classList.add('hidden');
-                DOM.appLoading.classList.remove('hidden');
-                initApp();
+            
+            document.documentElement.lang = userLang;
+            currentLang = i18nDict[userLang] ? userLang : 'en'; // Fallback to EN if translation unavailable
+            
+            const strings = i18nDict[currentLang];
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (strings[key]) el.textContent = strings[key];
             });
 
-            // Ensure proper memory teardown (Bug 2 Fix)
-            window.addEventListener('beforeunload', () => {
-                if (typeof window.unsubscribeAuth === 'function') {
-                    window.unsubscribeAuth();
-                }
+            document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+                const key = el.getAttribute('data-i18n-aria');
+                if (strings[key]) el.setAttribute('aria-label', strings[key]);
             });
-
-            // Bug 8 Fix: Graceful HTTPS check (avoids throwing Unhandled Exceptions to monitoring tools)
-            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            if (window.location.protocol !== 'https:' && !isLocalhost) {
-                DOM.appLoading.classList.add('hidden');
-                DOM.initError.textContent = "Security Error: HTTPS connection required for secure sign-in.";
-                DOM.initError.classList.remove('hidden');
-                return;
-            }
-
-            initApp();
         }
 
-        // Bug 6 Fix: Rock-solid screen reader announcement by creating new nodes
+        // Bug 3 Fix: Explicit SPA Teardown Hook
+        window.teardownApp = () => {
+            if (typeof window.unsubscribeAuth === 'function') {
+                window.unsubscribeAuth();
+                window.unsubscribeAuth = null;
+            }
+            if (eventAbortController) {
+                eventAbortController.abort(); // Cleans up event listeners automatically
+            }
+            if (authTimeout) clearTimeout(authTimeout);
+        };
+        // Keep beforeunload as fallback for traditional multi-page refreshes
+        window.addEventListener('beforeunload', window.teardownApp);
+
+        // Bootstrap App Setup
+        function bootstrap() {
+            try {
+                extractDOM();
+                applyI18n();
+
+                DOM.userPhoto.onerror = function() {
+                    this.classList.add('hidden');
+                };
+
+                DOM.retryBtn.addEventListener('click', () => {
+                    DOM.initError.classList.add('hidden');
+                    DOM.retryBtn.classList.add('hidden');
+                    DOM.appLoading.classList.remove('hidden');
+                    initApp();
+                });
+
+                // Bug 9 Fix: Actionable HTTPS instruction
+                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                if (window.location.protocol !== 'https:' && !isLocalhost) {
+                    DOM.appLoading.classList.add('hidden');
+                    DOM.initError.innerHTML = `${i18nDict[currentLang].https_err} <br/> <a class="action-link" onclick="window.location.protocol='https:'">${i18nDict[currentLang].reload_https}</a>`;
+                    DOM.initError.classList.remove('hidden');
+                    return;
+                }
+
+                initApp();
+            } catch (err) {
+                console.error("Bootstrap Failed:", err);
+                document.body.innerHTML = `<h2 style="color:red; text-align:center;">Fatal App Error: View Console</h2>`;
+            }
+        }
+
+        // Bug 6 Fix: Reliable screen reader announcements for JAWS via forced mutation sequencing
         function announceToScreenReader(message) {
             DOM.srAnnouncer.innerHTML = ''; 
-            const msgNode = document.createElement('div');
-            msgNode.textContent = message;
-            DOM.srAnnouncer.appendChild(msgNode);
+            setTimeout(() => {
+                const msgNode = document.createElement('div');
+                msgNode.textContent = message;
+                DOM.srAnnouncer.appendChild(msgNode);
+            }, 100);
         }
 
         async function initApp() {
+            const strings = i18nDict[currentLang];
+            
+            // Bug 1 Fix: Reset previous state on every retry attempt
+            previousAuthState = null; 
             isAuthResolved = false;
             if (authTimeout) clearTimeout(authTimeout);
+            
+            // Bug 2 Fix: Clear orphaned auth listener before re-registering
+            if (typeof window.unsubscribeAuth === 'function') {
+                window.unsubscribeAuth();
+            }
+            
+            // Bug 10 Fix: Abort old event listeners so `.addEventListener` doesn't stack or overwrite external tools
+            if (eventAbortController) eventAbortController.abort();
+            eventAbortController = new AbortController();
+            const signal = eventAbortController.signal;
 
-            // Bug 3 & Bug 7 Fix: Set fallback for Firebase network hang, disable buttons
             authTimeout = setTimeout(() => {
                 if (!isAuthResolved) {
                     DOM.appLoading.classList.add('hidden');
-                    DOM.initError.textContent = "Connection is slow. Authentication is taking too long to respond.";
+                    
+                    // Bug 4 Fix: Hide primary buttons contextually so user only interacts with Retry
+                    DOM.loginView.classList.add('hidden');
+                    DOM.dashboardView.classList.add('hidden');
+                    
+                    DOM.initError.textContent = strings.slow_conn;
                     DOM.initError.classList.remove('hidden');
                     DOM.retryBtn.classList.remove('hidden');
-                    DOM.loginBtn.disabled = true;
-                    DOM.logoutBtn.disabled = true;
                 }
             }, 10000);
 
             try {
                 const { initializeApp, getApps, getApp } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js");
                 const { 
-                    initializeAuth, 
-                    getAuth,
-                    signInWithPopup, 
-                    GoogleAuthProvider, 
-                    signOut, 
-                    onAuthStateChanged,
-                    browserLocalPersistence,
-                    browserPopupRedirectResolver
+                    initializeAuth, getAuth, signInWithPopup, GoogleAuthProvider, signOut, 
+                    onAuthStateChanged, browserLocalPersistence, browserPopupRedirectResolver
                 } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js");
 
                 const firebaseConfig = {
@@ -337,10 +440,10 @@
 
                 window.unsubscribeAuth = onAuthStateChanged(auth, (user) => {
                     isAuthResolved = true;
-                    clearTimeout(authTimeout); // Clears timeout properly upon successful init
+                    clearTimeout(authTimeout);
                     
                     DOM.appLoading.classList.add('hidden');
-                    DOM.loginBtn.disabled = false; // Restore button state if previously failed
+                    DOM.loginBtn.disabled = false; 
                     DOM.logoutBtn.disabled = false;
 
                     if (user) {
@@ -352,7 +455,6 @@
                         
                         if (user.photoURL) {
                             DOM.userPhoto.src = user.photoURL;
-                            // Bug 9 Fix: Personalized alt text for screen readers
                             DOM.userPhoto.alt = `Profile photo of ${displayFirstName}`;
                             DOM.userPhoto.classList.remove('hidden');
                         } else {
@@ -364,7 +466,7 @@
 
                         if (previousAuthState !== true) {
                             if (previousAuthState !== null) DOM.dashboardHeading.focus();
-                            announceToScreenReader("Successfully signed in. Welcome to your dashboard.");
+                            announceToScreenReader(`Successfully signed in. Welcome to your dashboard, ${displayFirstName}.`);
                         }
                         previousAuthState = true;
 
@@ -384,15 +486,13 @@
                     }
                 });
 
-                // Attach Handlers (Replacing previous to avoid duplicates on retry)
-                DOM.loginBtn.onclick = async () => {
+                // Attach Handlers safely using AbortController (Fixes Bug 10)
+                DOM.loginBtn.addEventListener('click', async () => {
                     DOM.loginError.classList.add('hidden');
-                    // Bug 4 Fix: Clear stale text BEFORE making it visible
                     DOM.loginError.textContent = '';
 
                     if (!navigator.onLine) {
-                        // Bug 10 Fix: Text set BEFORE removing hidden, ensuring screen reader fires accurately
-                        DOM.loginError.textContent = "You appear to be offline. Please check your connection.";
+                        DOM.loginError.textContent = strings.offline_err;
                         DOM.loginError.classList.remove('hidden');
                         return;
                     }
@@ -406,17 +506,16 @@
                         const ignoredErrors =['auth/popup-closed-by-user', 'auth/cancelled-popup-request'];
                         if (!ignoredErrors.includes(error.code)) {
                             DOM.loginError.textContent = error.code === 'auth/network-request-failed' 
-                                ? "Network error. Please check your internet connection." 
-                                : "Failed to sign in. Please try again.";
+                                ? strings.network_err : strings.generic_login_err;
                             DOM.loginError.classList.remove('hidden');
                         }
                     } finally {
                         DOM.loginBtn.disabled = false;
                         DOM.loginSpinner.classList.add('hidden');
                     }
-                };
+                }, { signal });
 
-                DOM.logoutBtn.onclick = async () => {
+                DOM.logoutBtn.addEventListener('click', async () => {
                     DOM.logoutError.classList.add('hidden');
                     DOM.logoutError.textContent = '';
                     
@@ -426,35 +525,30 @@
                     try {
                         await signOut(auth);
                     } catch (error) {
-                        DOM.logoutError.textContent = "Failed to log out safely. Please check your connection.";
+                        DOM.logoutError.textContent = strings.generic_logout_err;
                         DOM.logoutError.classList.remove('hidden');
                     } finally {
                         DOM.logoutBtn.disabled = false;
                         DOM.logoutSpinner.classList.add('hidden');
                     }
-                };
+                }, { signal });
 
             } catch (error) {
-                // Bug 3 Fix: Clear timeout so it doesn't overwrite this message
                 clearTimeout(authTimeout);
                 DOM.appLoading.classList.add('hidden');
                 
-                // Bug 10 Fix: Set text before making visible
-                DOM.initError.textContent = "Failed to load application modules. Please disable ad-blockers or check your connection.";
+                // Bug 4 Fix: Ensure UI action buttons are completely hidden on terminal failure
+                DOM.loginView.classList.add('hidden');
+                DOM.dashboardView.classList.add('hidden');
+                
+                DOM.initError.textContent = strings.load_err;
                 DOM.initError.classList.remove('hidden');
-                
-                // Bug 11 Fix: Display retry option
                 DOM.retryBtn.classList.remove('hidden');
-                
-                // Bug 7 Fix: Ensure UI buttons don't appear falsely active
-                if(DOM.loginBtn) DOM.loginBtn.disabled = true;
-                if(DOM.logoutBtn) DOM.logoutBtn.disabled = true;
                 
                 console.error("Initialization Error:", error);
             }
         }
 
-        // Initialize application once document is fully parsed
         document.addEventListener('DOMContentLoaded', bootstrap);
     </script>
 </body>
