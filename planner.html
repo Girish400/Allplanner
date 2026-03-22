@@ -28,18 +28,10 @@
     #page-shell{display:none;}
 
     /* ── GUEST JOIN BANNER ── */
-    #join-banner{
-      background:linear-gradient(135deg,var(--moss),#3a7050);
-      color:#fff; padding:14px 28px;
-      display:none; align-items:center; justify-content:space-between; gap:16px;
-      flex-wrap:wrap;
-    }
+    #join-banner{background:linear-gradient(135deg,var(--moss),#3a7050);color:#fff;padding:14px 28px;display:none;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
     #join-banner .join-msg{font-size:0.9rem;line-height:1.4;}
     #join-banner .join-msg strong{display:block;font-size:1rem;margin-bottom:2px;}
-    #join-banner .join-role-badge{
-      background:rgba(255,255,255,0.2);border-radius:20px;
-      padding:3px 12px;font-size:0.75rem;font-weight:600;letter-spacing:0.04em;
-    }
+    #join-banner .join-role-badge{background:rgba(255,255,255,0.2);border-radius:20px;padding:3px 12px;font-size:0.75rem;font-weight:600;letter-spacing:0.04em;}
 
     /* ── COMPLETED BANNER ── */
     #completed-banner{background:linear-gradient(135deg,#444,#666);color:rgba(255,255,255,0.85);padding:11px 28px;font-size:0.875rem;font-weight:500;display:none;align-items:center;gap:8px;}
@@ -60,6 +52,10 @@
     .icon-btn{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(245,240,232,0.8);font-size:1rem;transition:var(--transition);position:relative;}
     .icon-btn:hover{background:rgba(255,255,255,0.2);}
 
+    /* Logout button in nav */
+    .btn-logout-nav{padding:5px 14px;border-radius:8px;background:rgba(192,96,58,0.18);color:#f5c8b8;border:1px solid rgba(192,96,58,0.35);font-family:'DM Sans',sans-serif;font-size:0.78rem;font-weight:500;cursor:pointer;transition:var(--transition);white-space:nowrap;}
+    .btn-logout-nav:hover{background:rgba(192,96,58,0.32);}
+
     /* ── TABS ── */
     .tabs-bar{background:#fff;border-bottom:2px solid rgba(122,179,138,0.15);padding:0 28px;display:flex;gap:0;overflow-x:auto;}
     .tab{padding:14px 18px;font-size:0.875rem;font-weight:500;color:var(--text-sec);cursor:pointer;white-space:nowrap;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:var(--transition);display:flex;align-items:center;gap:6px;background:none;border-left:none;border-right:none;border-top:none;font-family:'DM Sans',sans-serif;}
@@ -79,10 +75,7 @@
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 
     /* ── SHARE BOX ── */
-    .share-box{
-      background:rgba(42,92,62,0.07);border:1.5px solid rgba(122,179,138,0.25);
-      border-radius:14px;padding:18px 22px;margin-bottom:24px;
-    }
+    .share-box{background:rgba(42,92,62,0.07);border:1.5px solid rgba(122,179,138,0.25);border-radius:14px;padding:18px 22px;margin-bottom:24px;}
     .share-box-top{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:12px;}
     .code-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--sage);font-weight:600;margin-bottom:4px;}
     .code-val{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;color:var(--forest);letter-spacing:0.05em;}
@@ -94,6 +87,23 @@
     .share-hint{font-size:0.78rem;color:var(--text-sec);margin-top:10px;line-height:1.5;}
     .share-hint strong{color:var(--forest);}
 
+    /* ── TRIP OVERVIEW EDIT ── */
+    .overview-edit-box{background:#fff;border:1.5px solid rgba(122,179,138,0.25);border-radius:14px;padding:22px 24px;margin-bottom:24px;}
+    .overview-edit-box h3{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--forest);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+    .edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .edit-field{display:flex;flex-direction:column;gap:5px;}
+    .edit-field.full{grid-column:1/-1;}
+    .edit-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--sage);font-weight:600;}
+    .edit-input{padding:10px 13px;border:1.5px solid rgba(122,179,138,0.3);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:0.875rem;background:#faf8f4;outline:none;transition:border-color .2s;color:var(--text-pri);}
+    .edit-input:focus{border-color:var(--sage);}
+    .edit-actions{margin-top:16px;display:flex;gap:10px;}
+    .btn-save-overview{padding:10px 22px;border-radius:10px;background:var(--moss);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;transition:var(--transition);}
+    .btn-save-overview:hover{background:var(--forest);}
+    .btn-cancel-edit{padding:10px 18px;border-radius:10px;border:1.5px solid #ddd;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;color:var(--text-sec);transition:var(--transition);}
+    .btn-cancel-edit:hover{background:rgba(0,0,0,0.04);}
+    .btn-edit-overview{padding:9px 18px;border-radius:10px;border:1.5px solid rgba(122,179,138,0.4);background:rgba(122,179,138,0.08);color:var(--moss);font-family:'DM Sans',sans-serif;font-size:0.83rem;font-weight:600;cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:6px;}
+    .btn-edit-overview:hover{background:rgba(122,179,138,0.18);}
+
     /* ── MEMBERS SECTION ── */
     .members-section{margin-top:28px;}
     .members-section h3{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--forest);margin-bottom:16px;}
@@ -101,7 +111,6 @@
     .member-card{background:#fff;border-radius:14px;border:1.5px solid rgba(122,179,138,0.18);padding:14px 18px;display:flex;align-items:center;gap:12px;min-width:200px;}
     .member-card-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--moss),var(--sage));display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;}
     .member-card-av img{width:100%;height:100%;object-fit:cover;}
-    .member-card-info{}
     .member-card-name{font-weight:600;color:var(--forest);font-size:0.9rem;}
     .member-card-email{font-size:0.75rem;color:var(--text-sec);margin-top:1px;}
     .member-card-role{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.07em;font-weight:600;margin-top:4px;}
@@ -128,29 +137,30 @@
     .checklist-section{max-width:640px;}
     .checklist-category{margin-bottom:24px;}
     .checklist-cat-title{font-weight:600;color:var(--forest);margin-bottom:10px;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.06em;}
-    .checklist-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-radius:10px;border:1.5px solid rgba(122,179,138,0.18);margin-bottom:6px;transition:var(--transition);cursor:pointer;user-select:none;}
-    .checklist-item:hover{border-color:var(--sage);}
-    .checklist-item.checked{opacity:0.55;}
-    .checklist-item.checked .item-text{text-decoration:line-through;}
+    .checklist-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-radius:10px;border:1.5px solid rgba(122,179,138,0.18);margin-bottom:6px;transition:var(--transition);user-select:none;}
+    .checklist-item:not(.locked-by-other){cursor:pointer;}
+    .checklist-item:not(.locked-by-other):hover{border-color:var(--sage);}
+    /* unchecked */
     .check-box{width:20px;height:20px;border-radius:6px;border:2px solid var(--sage);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:var(--transition);background:#fff;}
-    .checklist-item.checked .check-box{background:var(--moss);border-color:var(--moss);}
+    /* locked by self — green */
+    .checklist-item.checked-self .check-box{background:var(--moss);border-color:var(--moss);}
+    /* locked by other — amber */
+    .checklist-item.locked-by-other .check-box{background:var(--amber);border-color:var(--amber);}
     .check-mark{color:#fff;font-size:0.75rem;display:none;}
-    .checklist-item.checked .check-mark{display:block;}
-    .item-text{font-size:0.875rem;color:var(--text-pri);}
+    .checklist-item.checked-self .check-mark,
+    .checklist-item.locked-by-other .check-mark{display:block;}
+    .item-text{font-size:0.875rem;color:var(--text-pri);flex:1;}
+    /* lock indicator */
+    .check-lock-info{display:flex;align-items:center;gap:5px;font-size:0.72rem;font-weight:600;white-space:nowrap;flex-shrink:0;}
+    .lock-icon{font-size:0.85rem;}
+    .lock-name-self{color:var(--moss);}
+    .lock-name-other{color:var(--amber);}
 
     /* ── NOTES ── */
     .notes-area{width:100%;min-height:220px;padding:16px;border-radius:12px;border:1.5px solid rgba(122,179,138,0.3);background:#fff;font-family:'DM Sans',sans-serif;font-size:0.9rem;color:var(--text-pri);resize:vertical;outline:none;transition:border-color .2s;}
     .notes-area:focus{border-color:var(--sage);}
     .btn-save{margin-top:10px;padding:10px 22px;border-radius:10px;background:var(--moss);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;transition:var(--transition);}
     .btn-save:hover{background:var(--forest);}
-
-    /* ── COSTS ── */
-    .costs-table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(26,58,42,0.07);}
-    .costs-table th{background:var(--forest);color:rgba(245,240,232,0.8);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;padding:12px 16px;text-align:left;font-weight:600;}
-    .costs-table td{padding:12px 16px;border-bottom:1px solid rgba(122,179,138,0.12);font-size:0.875rem;}
-    .costs-table tr:last-child td{border-bottom:none;}
-    .costs-total{display:flex;justify-content:flex-end;margin-top:14px;}
-    .costs-total-box{background:var(--forest);color:#fff;border-radius:12px;padding:12px 22px;font-size:1rem;font-weight:700;}
 
     /* ── DAY BLOCKS ── */
     .day-block{background:#fff;border-radius:14px;border:1.5px solid rgba(122,179,138,0.18);margin-bottom:14px;overflow:hidden;}
@@ -160,17 +170,74 @@
     .day-input{width:100%;padding:10px 14px;border:1.5px solid rgba(122,179,138,0.3);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.875rem;background:#faf8f4;outline:none;transition:border-color .2s;color:var(--text-pri);}
     .day-input:focus{border-color:var(--sage);}
 
+    /* ══════════════════════════════════
+       ADVANCED COST TRACKER
+    ══════════════════════════════════ */
+    .costs-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px;}
+    .btn-add-expense{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:10px;background:var(--amber);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;transition:var(--transition);}
+    .btn-add-expense:hover{background:#c0721e;}
+
+    /* Expense entry form */
+    .expense-form{background:#fff;border:1.5px solid rgba(122,179,138,0.25);border-radius:14px;padding:20px 22px;margin-bottom:20px;display:none;}
+    .expense-form.open{display:block;animation:fadeIn .25s ease;}
+    .expense-form-title{font-weight:600;color:var(--forest);margin-bottom:14px;font-size:0.95rem;}
+    .expense-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+    .expense-grid.three{grid-template-columns:1fr 1fr 1fr;}
+    .ef-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--sage);font-weight:600;display:block;margin-bottom:5px;}
+    .ef-input{width:100%;padding:10px 13px;border:1.5px solid rgba(122,179,138,0.3);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:0.875rem;background:#faf8f4;outline:none;transition:border-color .2s;color:var(--text-pri);}
+    .ef-input:focus{border-color:var(--sage);}
+    .ef-actions{display:flex;gap:10px;margin-top:4px;}
+    .btn-ef-add{padding:10px 20px;border-radius:9px;background:var(--moss);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;transition:var(--transition);}
+    .btn-ef-add:hover{background:var(--forest);}
+    .btn-ef-cancel{padding:10px 16px;border-radius:9px;border:1.5px solid #ddd;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;color:var(--text-sec);transition:var(--transition);}
+    .btn-ef-cancel:hover{background:rgba(0,0,0,0.04);}
+
+    /* Expenses table */
+    .costs-table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(26,58,42,0.07);}
+    .costs-table th{background:var(--forest);color:rgba(245,240,232,0.8);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;padding:12px 14px;text-align:left;font-weight:600;}
+    .costs-table td{padding:11px 14px;border-bottom:1px solid rgba(122,179,138,0.12);font-size:0.855rem;vertical-align:middle;}
+    .costs-table tr:last-child td{border-bottom:none;}
+    .costs-table tr:hover td{background:rgba(122,179,138,0.04);}
+    .btn-del-expense{background:none;border:none;color:var(--ember);cursor:pointer;font-size:1rem;padding:0 4px;opacity:0.6;transition:var(--transition);}
+    .btn-del-expense:hover{opacity:1;}
+    .split-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(122,179,138,0.12);border:1px solid rgba(122,179,138,0.25);color:var(--moss);border-radius:12px;padding:2px 8px;font-size:0.72rem;font-weight:600;}
+
+    /* Summary section */
+    .costs-summary{margin-top:24px;}
+    .costs-summary h3{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;color:var(--forest);margin-bottom:14px;}
+    .summary-totals{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+    .summary-total-card{background:#fff;border-radius:12px;border:1.5px solid rgba(122,179,138,0.18);padding:14px 16px;}
+    .stc-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--sage);font-weight:600;margin-bottom:4px;}
+    .stc-val{font-size:1.05rem;font-weight:700;color:var(--forest);}
+    .stc-sub{font-size:0.75rem;color:var(--text-sec);margin-top:2px;}
+
+    /* Settlement table */
+    .settlement-section{background:#fff;border-radius:14px;border:1.5px solid rgba(122,179,138,0.18);overflow:hidden;}
+    .settlement-header{padding:14px 18px;background:linear-gradient(135deg,rgba(46,92,62,0.07),rgba(122,179,138,0.07));}
+    .settlement-header h4{font-weight:700;color:var(--forest);font-size:0.9rem;margin-bottom:2px;}
+    .settlement-header p{font-size:0.78rem;color:var(--text-sec);}
+    .settlement-table{width:100%;border-collapse:collapse;}
+    .settlement-table th{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--sage);font-weight:600;padding:10px 18px;text-align:left;border-bottom:1px solid rgba(122,179,138,0.12);}
+    .settlement-table td{padding:12px 18px;border-bottom:1px solid rgba(122,179,138,0.08);font-size:0.855rem;}
+    .settlement-table tr:last-child td{border-bottom:none;}
+    .owes-arrow{color:var(--ember);font-weight:700;margin:0 6px;}
+    .amount-owed{color:var(--ember);font-weight:700;}
+    .amount-ok{color:#2a7a3a;font-weight:600;}
+    .no-debts{padding:20px 18px;color:var(--text-sec);font-size:0.875rem;text-align:center;}
+
     /* ── TOAST ── */
     #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--forest);color:#fff;padding:11px 22px;border-radius:12px;font-size:0.875rem;font-weight:500;opacity:0;transition:.3s ease;z-index:999;pointer-events:none;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
     #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
     @media(max-width:640px){
-      .topnav{padding:0 14px;} .main{padding:20px 16px 60px;}
+      .topnav{padding:0 12px;} .main{padding:20px 16px 60px;}
       .tabs-bar{padding:0 8px;} .tab{padding:12px 10px;font-size:0.78rem;}
       .stat-grid{grid-template-columns:1fr 1fr;}
       .nav-trip-dates{display:none;}
       .share-url-row{flex-direction:column;align-items:stretch;}
       .btn-copy{justify-content:center;}
+      .edit-grid,.expense-grid,.expense-grid.three{grid-template-columns:1fr;}
+      .btn-logout-nav span{display:none;}
     }
   </style>
 </head>
@@ -211,6 +278,7 @@
         <span id="user-chip-name"></span>
       </div>
       <div class="icon-btn" title="Copy share link" onclick="copyShareLink()">🔗</div>
+      <button class="btn-logout-nav" id="btn-logout" title="Sign out">🚪 <span>Sign Out</span></button>
     </div>
   </nav>
 
@@ -230,6 +298,43 @@
     <div class="tab-panel active" id="panel-overview">
       <div class="panel-head">
         <h2>Trip Overview <span class="live-badge"><span class="live-dot"></span> Live sync</span></h2>
+        <button class="btn-edit-overview" id="btn-edit-overview" onclick="toggleEditOverview(true)" style="display:none;">✏️ Edit Trip</button>
+      </div>
+
+      <!-- EDIT OVERVIEW FORM (owner only) -->
+      <div class="overview-edit-box" id="overview-edit-box" style="display:none;">
+        <h3>✏️ Edit Trip Details</h3>
+        <div class="edit-grid">
+          <div class="edit-field full">
+            <label class="edit-label">Trip Name</label>
+            <input class="edit-input" id="edit-name" type="text" placeholder="Trip name" />
+          </div>
+          <div class="edit-field full">
+            <label class="edit-label">Campsite / Location</label>
+            <input class="edit-input" id="edit-location" type="text" placeholder="Location" />
+          </div>
+          <div class="edit-field">
+            <label class="edit-label">Start Date</label>
+            <input class="edit-input" id="edit-start" type="date" />
+          </div>
+          <div class="edit-field">
+            <label class="edit-label">End Date</label>
+            <input class="edit-input" id="edit-end" type="date" />
+          </div>
+          <div class="edit-field full">
+            <label class="edit-label">Camping Mode</label>
+            <select class="edit-input" id="edit-mode">
+              <option value="tent">⛺ Tent Only</option>
+              <option value="rv">🚐 RV Only</option>
+              <option value="both">⛺🚐 Both Tent &amp; RV</option>
+              <option value="cabin">🏡 Cabin</option>
+            </select>
+          </div>
+        </div>
+        <div class="edit-actions">
+          <button class="btn-save-overview" onclick="saveOverview()">💾 Save Changes</button>
+          <button class="btn-cancel-edit" onclick="toggleEditOverview(false)">Cancel</button>
+        </div>
       </div>
 
       <!-- SHARE BOX -->
@@ -283,14 +388,89 @@
       <div id="dayplan-container"></div>
     </div>
 
-    <!-- COSTS -->
+    <!-- COSTS — ADVANCED -->
     <div class="tab-panel" id="panel-costs">
-      <div class="panel-head"><h2>Cost Tracker</h2></div>
-      <table class="costs-table">
-        <thead><tr><th>Item</th><th>Category</th><th>Paid By</th><th>Amount</th></tr></thead>
+      <div class="panel-head"><h2>💰 Cost Tracker</h2></div>
+
+      <div class="costs-toolbar">
+        <button class="btn-add-expense" onclick="toggleExpenseForm(true)">＋ Add Expense</button>
+      </div>
+
+      <!-- EXPENSE ENTRY FORM -->
+      <div class="expense-form" id="expense-form">
+        <div class="expense-form-title">New Expense</div>
+        <div class="expense-grid">
+          <div>
+            <label class="ef-label">Item / Description</label>
+            <input class="ef-input" id="ef-item" type="text" placeholder="e.g. Firewood" />
+          </div>
+          <div>
+            <label class="ef-label">Category</label>
+            <select class="ef-input" id="ef-category">
+              <option value="Food">🍔 Food</option>
+              <option value="Fuel">⛽ Fuel</option>
+              <option value="Gear">🎒 Gear</option>
+              <option value="Site">🏕️ Campsite / Site</option>
+              <option value="Activities">🎉 Activities</option>
+              <option value="Transport">🚗 Transport</option>
+              <option value="Other">📦 Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="expense-grid three">
+          <div>
+            <label class="ef-label">Amount ($)</label>
+            <input class="ef-input" id="ef-amount" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+          <div>
+            <label class="ef-label">Paid By (Family/Name)</label>
+            <input class="ef-input" id="ef-paidby" type="text" placeholder="e.g. Smith Family" />
+          </div>
+          <div>
+            <label class="ef-label">Split Between</label>
+            <select class="ef-input" id="ef-split">
+              <option value="all">All families equally</option>
+              <option value="custom">Select families…</option>
+            </select>
+          </div>
+        </div>
+        <div id="ef-family-checkboxes" style="display:none;margin-bottom:12px;padding:10px 14px;background:#faf8f4;border-radius:9px;border:1.5px solid rgba(122,179,138,0.2);">
+          <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--sage);font-weight:600;margin-bottom:8px;">Select families to split between:</div>
+          <div id="ef-family-checks"></div>
+        </div>
+        <div class="ef-actions">
+          <button class="btn-ef-add" onclick="addExpense()">Add Expense</button>
+          <button class="btn-ef-cancel" onclick="toggleExpenseForm(false)">Cancel</button>
+        </div>
+      </div>
+
+      <!-- EXPENSES TABLE -->
+      <table class="costs-table" id="costs-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Category</th>
+            <th>Paid By</th>
+            <th>Split</th>
+            <th>Amount</th>
+            <th></th>
+          </tr>
+        </thead>
         <tbody id="costs-body"></tbody>
       </table>
-      <div class="costs-total"><div class="costs-total-box">Total: $<span id="costs-total-val">0.00</span></div></div>
+
+      <!-- SUMMARY & SETTLEMENT -->
+      <div class="costs-summary" id="costs-summary">
+        <h3>📊 Summary & Settlement</h3>
+        <div class="summary-totals" id="summary-totals"></div>
+        <div class="settlement-section">
+          <div class="settlement-header">
+            <h4>💸 Who Owes Who</h4>
+            <p>Calculated based on expenses paid and shares owed.</p>
+          </div>
+          <div id="settlement-body"></div>
+        </div>
+      </div>
     </div>
 
     <!-- NOTES -->
@@ -323,13 +503,10 @@
 
   /* ══════════════════════════════════════════════════════
      URL PARSING
-     Supports two formats:
-       planner.html#DOCID          (owner bookmark / internal link)
-       planner.html?invite=TRIPCODE (share link — new format)
   ══════════════════════════════════════════════════════ */
   const urlParams  = new URLSearchParams(location.search);
-  const inviteCode = urlParams.get('invite') || null;   // guest share link
-  const hashId     = location.hash.slice(1) || null;    // owner direct link
+  const inviteCode = urlParams.get('invite') || null;
+  const hashId     = location.hash.slice(1) || null;
 
   let currentUser  = null;
   let tripData     = null;
@@ -338,12 +515,9 @@
 
   /* ══════════════════════════════════════════════════════
      AUTH GUARD
-     If user not signed in → send to index.html preserving
-     the invite code so it survives the Google sign-in round-trip.
   ══════════════════════════════════════════════════════ */
   auth.onAuthStateChanged(async user => {
     if (!user) {
-      /* Preserve invite code through sign-in */
       const dest = inviteCode
         ? `index.html?invite=${encodeURIComponent(inviteCode)}`
         : 'index.html';
@@ -361,12 +535,15 @@
     setupUserChip(user);
 
     if (inviteCode) {
-      /* GUEST PATH — look up trip by tripCode */
       await handleGuestInvite(inviteCode);
     } else {
-      /* OWNER PATH — load by Firestore doc ID */
       loadTripById(hashId);
     }
+  });
+
+  /* ── LOGOUT BUTTON ── */
+  document.getElementById('btn-logout').addEventListener('click', () => {
+    auth.signOut().then(() => window.location.replace('index.html'));
   });
 
   /* ══════════════════════════════════════════════════════
@@ -375,21 +552,15 @@
   async function handleGuestInvite(code) {
     setGuardMsg('Joining trip…');
     try {
-      /* Query Firestore for this invite code */
       const snap = await db.collection('trips')
         .where('tripCode', '==', code.toUpperCase())
-        .limit(1)
-        .get();
+        .limit(1).get();
 
-      if (snap.empty) {
-        setGuardMsg('Invalid invite link — trip not found.');
-        return;
-      }
+      if (snap.empty) { setGuardMsg('Invalid invite link — trip not found.'); return; }
 
       const doc  = snap.docs[0];
       const data = { id: doc.id, ...doc.data() };
 
-      /* If this is the owner, redirect to their normal owner URL */
       if (data.ownerUID === currentUser.uid) {
         window.location.replace(`planner.html#${doc.id}`);
         return;
@@ -397,9 +568,7 @@
 
       isGuest = true;
 
-      /* Add guest to trip's guestMembers array (idempotent — check first) */
-      const alreadyMember = (data.guestMembers || [])
-        .some(m => m.uid === currentUser.uid);
+      const alreadyMember = (data.guestMembers || []).some(m => m.uid === currentUser.uid);
 
       if (!alreadyMember) {
         setGuardMsg('Adding you to the trip…');
@@ -414,12 +583,8 @@
         });
       }
 
-      /* Redirect to clean URL — now load by doc ID */
-      /* Replace URL so back-button works cleanly */
       history.replaceState(null, '', `planner.html#${doc.id}`);
-
-      /* Now subscribe to the trip live */
-      loadTripById(doc.id, /* showJoinBanner= */ !alreadyMember);
+      loadTripById(doc.id, !alreadyMember);
 
     } catch (err) {
       console.error('[PlanAway] handleGuestInvite:', err);
@@ -428,7 +593,7 @@
   }
 
   /* ══════════════════════════════════════════════════════
-     LOAD TRIP BY FIRESTORE DOC ID (real-time)
+     LOAD TRIP BY DOC ID
   ══════════════════════════════════════════════════════ */
   function loadTripById(docId, showJoinBanner) {
     db.collection('trips').doc(docId).onSnapshot(snap => {
@@ -439,8 +604,6 @@
       }
 
       const data = { id: snap.id, ...snap.data() };
-
-      /* Determine access level */
       isOwner = data.ownerUID === currentUser.uid;
       const guestList = Array.isArray(data.guestMembers) ? data.guestMembers : [];
       isGuest = !isOwner && guestList.some(m => m.uid === currentUser.uid);
@@ -452,16 +615,17 @@
 
       tripData = data;
 
-      /* Show page */
       document.getElementById('auth-guard').style.display = 'none';
       document.getElementById('page-shell').style.display = 'block';
 
-      /* Show join banner only first time a guest arrives */
       if (showJoinBanner && isGuest) {
         const banner = document.getElementById('join-banner');
         document.getElementById('join-trip-name').textContent = data.name || 'This trip';
         banner.style.display = 'flex';
       }
+
+      /* Show edit button for owner only */
+      document.getElementById('btn-edit-overview').style.display = isOwner ? 'flex' : 'none';
 
       renderTrip(data);
     }, err => {
@@ -470,9 +634,7 @@
     });
   }
 
-  function setGuardMsg(msg) {
-    document.getElementById('guard-msg').textContent = msg;
-  }
+  function setGuardMsg(msg) { document.getElementById('guard-msg').textContent = msg; }
 
   /* ══════════════════════════════════════════════════════
      USER CHIP
@@ -507,7 +669,7 @@
   }
 
   /* ══════════════════════════════════════════════════════
-     SHARE LINK — uses ?invite=TRIPCODE so guests can join
+     SHARE LINK
   ══════════════════════════════════════════════════════ */
   function getShareUrl() {
     if (!tripData?.tripCode) return '';
@@ -521,17 +683,10 @@
     if (!url) { showToast('Trip not loaded yet.'); return; }
     navigator.clipboard.writeText(url).then(() => {
       const btn = document.getElementById('btn-copy-link');
-      btn.textContent = '✅ Copied!';
-      btn.classList.add('copied');
+      btn.textContent = '✅ Copied!'; btn.classList.add('copied');
       showToast('Invite link copied! Share it with your group.');
-      setTimeout(() => {
-        btn.textContent = '📋 Copy Link';
-        btn.classList.remove('copied');
-      }, 2500);
-    }).catch(() => {
-      /* Fallback for browsers that block clipboard without HTTPS */
-      prompt('Copy this invite link:', url);
-    });
+      setTimeout(() => { btn.textContent = '📋 Copy Link'; btn.classList.remove('copied'); }, 2500);
+    }).catch(() => { prompt('Copy this invite link:', url); });
   }
 
   function copyCode() {
@@ -539,6 +694,44 @@
     navigator.clipboard.writeText(tripData.tripCode)
       .then(() => showToast(`Invite code "${tripData.tripCode}" copied!`))
       .catch(() => {});
+  }
+
+  /* ══════════════════════════════════════════════════════
+     EDIT OVERVIEW (Feature 6)
+  ══════════════════════════════════════════════════════ */
+  function toggleEditOverview(show) {
+    document.getElementById('overview-edit-box').style.display = show ? 'block' : 'none';
+    document.getElementById('btn-edit-overview').style.display = (!show && isOwner) ? 'flex' : 'none';
+    if (show && tripData) {
+      document.getElementById('edit-name').value     = tripData.name || '';
+      document.getElementById('edit-location').value = tripData.location || '';
+      document.getElementById('edit-start').value    = tripData.startDate || '';
+      document.getElementById('edit-end').value      = tripData.endDate || '';
+      document.getElementById('edit-mode').value     = tripData.mode || 'both';
+    }
+  }
+
+  async function saveOverview() {
+    if (!tripData || !isOwner) return;
+    const name  = document.getElementById('edit-name').value.trim();
+    const loc   = document.getElementById('edit-location').value.trim();
+    const start = document.getElementById('edit-start').value;
+    const end   = document.getElementById('edit-end').value;
+    const mode  = document.getElementById('edit-mode').value;
+
+    if (!name)  { showToast('Trip name cannot be empty.'); return; }
+    if (!loc)   { showToast('Location cannot be empty.'); return; }
+    if (start && end && new Date(end) <= new Date(start)) {
+      showToast('End date must be after start date.'); return;
+    }
+
+    try {
+      await db.collection('trips').doc(tripData.id).update({ name, location:loc, startDate:start, endDate:end, mode });
+      toggleEditOverview(false);
+      showToast('Trip details updated! ✅');
+    } catch (err) {
+      showToast('Error saving — ' + (err.message||'try again.'));
+    }
   }
 
   /* ══════════════════════════════════════════════════════
@@ -571,7 +764,7 @@
       {icon:'📅',label:'Start',    value:fmtDateLong(d.startDate), sub:''},
       {icon:'🏁',label:'End',      value:fmtDateLong(d.endDate),   sub:''},
       {icon:'🌙',label:'Nights',   value:nights,                   sub:''},
-      {icon:'👥',label:'Members',  value:1 + guests.length,        sub:isOwner?'You + guests':'Shared trip'},
+      {icon:'👥',label:'Members',  value:1+guests.length,          sub:isOwner?'You + guests':'Shared trip'},
       {icon:'🏕️',label:'Mode',     value:modeLabels[d.mode]||d.mode||'—', sub:''},
       {icon:'🔑',label:'Invite Code', value:d.tripCode||'—',      sub:'Share to invite'},
     ];
@@ -586,25 +779,18 @@
     /* Members grid */
     const mg = document.getElementById('members-grid');
     mg.innerHTML = '';
-
-    /* Owner card */
-    const ownerCard = makeMemberCard({
+    mg.appendChild(makeMemberCard({
       displayName: d.ownerDisplayName || d.ownerEmail || 'Trip Owner',
       email: d.ownerEmail || '',
       photoURL: d.ownerPhotoURL || '',
-      role: 'owner',
-      isYou: isOwner,
-    });
-    mg.appendChild(ownerCard);
-
-    /* Guest cards */
+      role: 'owner', isYou: isOwner,
+    }));
     guests.forEach(g => {
       mg.appendChild(makeMemberCard({
         displayName: g.displayName || g.email || 'Guest',
         email: g.email || '',
         photoURL: g.photoURL || '',
-        role: 'member',
-        isYou: g.uid === currentUser.uid,
+        role: 'member', isYou: g.uid === currentUser.uid,
       }));
     });
 
@@ -642,10 +828,8 @@
     const av = document.createElement('div'); av.className = 'member-card-av';
     if (photoURL) {
       const img = document.createElement('img'); img.src = photoURL; img.alt = displayName; av.appendChild(img);
-    } else {
-      av.textContent = (displayName||'?').charAt(0).toUpperCase();
-    }
-    const info = document.createElement('div'); info.className = 'member-card-info';
+    } else { av.textContent = (displayName||'?').charAt(0).toUpperCase(); }
+    const info = document.createElement('div');
     const nameEl = document.createElement('div'); nameEl.className = 'member-card-name';
     nameEl.textContent = displayName + (isYou ? ' (you)' : '');
     const emailEl = document.createElement('div'); emailEl.className = 'member-card-email';
@@ -659,7 +843,9 @@
   }
 
   /* ══════════════════════════════════════════════════════
-     CHECKLIST
+     CHECKLIST — LOCK SYSTEM (Feature 8)
+     checklistState[key] = { checked: true, uid, displayName, email }
+     or just boolean (legacy support)
   ══════════════════════════════════════════════════════ */
   const CHECKLIST_CATS = {
     'Shelter & Sleeping':['Tent / Tarp','Sleeping bags','Sleeping pads','Pillows','Tarp for rain'],
@@ -674,28 +860,76 @@
     const container = document.getElementById('checklist-container');
     container.innerHTML = '';
     const checkState = trip.checklistState || {};
+    const myName = (currentUser.displayName || '').trim() || currentUser.email?.split('@')[0] || 'Someone';
+
     Object.entries(CHECKLIST_CATS).forEach(([cat, items]) => {
       const section = document.createElement('div'); section.className = 'checklist-category';
       const title = document.createElement('div'); title.className = 'checklist-cat-title'; title.textContent = cat;
       section.appendChild(title);
+
       items.forEach(item => {
         const key = flatKey(cat, item);
+        const state = checkState[key];
+
+        /* Normalise: state can be boolean (legacy) or object */
+        let isChecked = false, checkedByUid = null, checkedByName = '';
+        if (state && typeof state === 'object') {
+          isChecked     = state.checked;
+          checkedByUid  = state.uid;
+          checkedByName = state.displayName || state.email || 'Someone';
+        } else if (state === true) {
+          isChecked = true; checkedByUid = null; checkedByName = '(legacy)';
+        }
+
+        const isMine      = isChecked && checkedByUid === currentUser.uid;
+        const isOtherLock = isChecked && checkedByUid && checkedByUid !== currentUser.uid;
+
         const row = document.createElement('div');
-        row.className = 'checklist-item' + (checkState[key] ? ' checked' : '');
-        const box = document.createElement('div'); box.className = 'check-box';
+        row.className = 'checklist-item' + (isMine ? ' checked-self' : '') + (isOtherLock ? ' locked-by-other' : '');
+
+        const box  = document.createElement('div'); box.className = 'check-box';
         const mark = document.createElement('span'); mark.className = 'check-mark'; mark.textContent = '✓';
         box.appendChild(mark);
+
         const text = document.createElement('span'); text.className = 'item-text'; text.textContent = item;
+
         row.appendChild(box); row.appendChild(text);
-        row.addEventListener('click', () => {
-          const nowChecked = !row.classList.contains('checked');
-          row.classList.toggle('checked', nowChecked);
-          const update = {}; update[`checklistState.${key}`] = nowChecked;
-          db.collection('trips').doc(tripData.id).update(update)
-            .catch(e => console.warn('[PlanAway] checklist:', e));
-        });
+
+        /* Lock info badge */
+        if (isChecked) {
+          const lockInfo = document.createElement('div'); lockInfo.className = 'check-lock-info';
+          const lockIcon = document.createElement('span'); lockIcon.className = 'lock-icon'; lockIcon.textContent = '🔒';
+          const lockName = document.createElement('span');
+          lockName.className = isMine ? 'lock-name-self' : 'lock-name-other';
+          lockName.textContent = isMine ? 'You' : checkedByName;
+          lockInfo.appendChild(lockIcon); lockInfo.appendChild(lockName);
+          row.appendChild(lockInfo);
+        }
+
+        /* Click handler: can only check/uncheck own lock */
+        if (!isOtherLock) {
+          row.addEventListener('click', () => {
+            const nowChecked = !isMine; // toggle
+            const update = {};
+            if (nowChecked) {
+              update[`checklistState.${key}`] = {
+                checked:     true,
+                uid:         currentUser.uid,
+                displayName: myName,
+                email:       currentUser.email,
+                lockedAt:    new Date().toISOString(),
+              };
+            } else {
+              update[`checklistState.${key}`] = firebase.firestore.FieldValue.delete();
+            }
+            db.collection('trips').doc(tripData.id).update(update)
+              .catch(e => console.warn('[PlanAway] checklist:', e));
+          });
+        }
+
         section.appendChild(row);
       });
+
       container.appendChild(section);
     });
   }
@@ -714,8 +948,8 @@
       const meals = (trip.meals&&trip.meals[`day${i}`])||{};
       const block = document.createElement('div'); block.className = 'day-block';
       const header = document.createElement('div'); header.className = 'day-header';
-      const title = document.createElement('div'); title.className = 'day-title'; title.textContent = `📅 Day ${i+1} — ${dayLabel}`;
-      header.appendChild(title); block.appendChild(header);
+      const titleEl = document.createElement('div'); titleEl.className = 'day-title'; titleEl.textContent = `📅 Day ${i+1} — ${dayLabel}`;
+      header.appendChild(titleEl); block.appendChild(header);
       const body = document.createElement('div'); body.className = 'day-body';
       body.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;';
       ['breakfast','lunch','dinner'].forEach(meal => {
@@ -751,8 +985,8 @@
       const activity = (trip.dayplan&&trip.dayplan[`day${i}`])||'';
       const block = document.createElement('div'); block.className = 'day-block';
       const header = document.createElement('div'); header.className = 'day-header';
-      const title = document.createElement('div'); title.className = 'day-title'; title.textContent = `🏕️ Day ${i+1} — ${dayLabel}`;
-      header.appendChild(title); block.appendChild(header);
+      const titleEl = document.createElement('div'); titleEl.className = 'day-title'; titleEl.textContent = `🏕️ Day ${i+1} — ${dayLabel}`;
+      header.appendChild(titleEl); block.appendChild(header);
       const body = document.createElement('div'); body.className = 'day-body';
       const inp = document.createElement('input');
       inp.type='text'; inp.className='day-input'; inp.placeholder="What's planned? (hike, swim, explore…)";
@@ -767,28 +1001,259 @@
   }
 
   /* ══════════════════════════════════════════════════════
-     COSTS
+     COSTS — ADVANCED (Feature 7)
   ══════════════════════════════════════════════════════ */
+
+  /* Split dropdown toggle */
+  document.getElementById('ef-split').addEventListener('change', function() {
+    const customBox = document.getElementById('ef-family-checkboxes');
+    customBox.style.display = this.value === 'custom' ? 'block' : 'none';
+    if (this.value === 'custom') populateFamilyCheckboxes();
+  });
+
+  function populateFamilyCheckboxes() {
+    const container = document.getElementById('ef-family-checks');
+    container.innerHTML = '';
+    const families = Array.isArray(tripData?.families) ? tripData.families : [];
+    if (!families.length) {
+      container.innerHTML = '<p style="color:var(--text-sec);font-size:0.82rem;">No families defined on this trip. Go to Trip Info to add families.</p>';
+      return;
+    }
+    families.forEach(f => {
+      const label = document.createElement('label');
+      label.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:0.875rem;color:var(--text-pri);cursor:pointer;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.value = f.name; cb.name = 'ef-family-cb';
+      cb.style.cssText = 'width:16px;height:16px;accent-color:var(--moss);cursor:pointer;';
+      cb.checked = true;
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(f.name));
+      container.appendChild(label);
+    });
+  }
+
+  function toggleExpenseForm(open) {
+    const form = document.getElementById('expense-form');
+    form.classList.toggle('open', open);
+    if (open) {
+      document.getElementById('ef-item').value    = '';
+      document.getElementById('ef-amount').value  = '';
+      document.getElementById('ef-paidby').value  = '';
+      document.getElementById('ef-split').value   = 'all';
+      document.getElementById('ef-family-checkboxes').style.display = 'none';
+      setTimeout(() => document.getElementById('ef-item').focus(), 100);
+    }
+  }
+
+  async function addExpense() {
+    const item    = document.getElementById('ef-item').value.trim();
+    const amount  = parseFloat(document.getElementById('ef-amount').value) || 0;
+    const paidBy  = document.getElementById('ef-paidby').value.trim();
+    const cat     = document.getElementById('ef-category').value;
+    const splitMode = document.getElementById('ef-split').value;
+
+    if (!item)   { showToast('Please enter an item description.'); return; }
+    if (!amount) { showToast('Please enter an amount.'); return; }
+    if (!paidBy) { showToast('Please enter who paid.'); return; }
+
+    let splitFamilies = [];
+    if (splitMode === 'all') {
+      const families = Array.isArray(tripData?.families) ? tripData.families : [];
+      splitFamilies = families.map(f => f.name);
+      if (!splitFamilies.length) splitFamilies = ['All'];
+    } else {
+      const cbs = document.querySelectorAll('input[name="ef-family-cb"]:checked');
+      splitFamilies = Array.from(cbs).map(c => c.value);
+      if (!splitFamilies.length) { showToast('Select at least one family to split between.'); return; }
+    }
+
+    const expense = {
+      id:       Date.now().toString(),
+      item, category:cat, paidBy, amount,
+      splitBetween: splitFamilies,
+      addedAt: new Date().toISOString(),
+    };
+
+    try {
+      const costs = Array.isArray(tripData.costs) ? [...tripData.costs] : [];
+      costs.push(expense);
+      await db.collection('trips').doc(tripData.id).update({ costs });
+      toggleExpenseForm(false);
+      showToast('Expense added ✅');
+    } catch (err) {
+      showToast('Error saving expense — ' + (err.message||'try again.'));
+    }
+  }
+
+  async function deleteExpense(expId) {
+    if (!tripData) return;
+    const costs = (Array.isArray(tripData.costs) ? tripData.costs : []).filter(c => c.id !== expId);
+    try {
+      await db.collection('trips').doc(tripData.id).update({ costs });
+      showToast('Expense removed.');
+    } catch (err) {
+      showToast('Error removing expense.');
+    }
+  }
+
   function renderCosts(trip) {
     const costs = Array.isArray(trip.costs) ? trip.costs : [];
+    const families = Array.isArray(trip.families) ? trip.families.map(f => f.name) : [];
     const tbody = document.getElementById('costs-body');
     tbody.innerHTML = '';
-    let total = 0;
+
     if (!costs.length) {
       const tr=document.createElement('tr'); const td=document.createElement('td');
-      td.colSpan=4; td.style.cssText='text-align:center;color:#aaa;padding:28px;font-size:0.875rem;';
-      td.textContent='No costs recorded yet.'; tr.appendChild(td); tbody.appendChild(tr);
+      td.colSpan=6; td.style.cssText='text-align:center;color:#aaa;padding:28px;font-size:0.875rem;';
+      td.textContent='No expenses recorded yet. Click "+ Add Expense" to start.';
+      tr.appendChild(td); tbody.appendChild(tr);
     } else {
       costs.forEach(c => {
-        total += (c.amount||0);
         const tr = document.createElement('tr');
-        [c.item||'',c.category||'',c.paidBy||'',`$${(c.amount||0).toFixed(2)}`].forEach(val => {
-          const td=document.createElement('td'); td.textContent=val; tr.appendChild(td);
+        const splitLabel = Array.isArray(c.splitBetween) ? c.splitBetween.join(', ') : (c.splitBetween||'All');
+        const perFamily = Array.isArray(c.splitBetween) && c.splitBetween.length > 0
+          ? ` ($${((c.amount||0)/c.splitBetween.length).toFixed(2)} each)`
+          : '';
+        [
+          c.item||'',
+          c.category||'',
+          c.paidBy||'',
+          '',  // split — rendered as badge
+          `$${(c.amount||0).toFixed(2)}`,
+          '',  // delete
+        ].forEach((val, idx) => {
+          const td = document.createElement('td');
+          if (idx === 3) {
+            // split badge
+            td.innerHTML = `<span class="split-badge" title="${esc(perFamily)}">${esc(splitLabel.length>30?splitLabel.slice(0,28)+'…':splitLabel)}</span>`;
+          } else if (idx === 5) {
+            // delete button (owner only)
+            if (isOwner) {
+              const btn = document.createElement('button'); btn.className='btn-del-expense'; btn.textContent='✕';
+              btn.title='Remove expense';
+              btn.addEventListener('click', () => deleteExpense(c.id));
+              td.appendChild(btn);
+            }
+          } else {
+            td.textContent = val;
+          }
+          tr.appendChild(td);
         });
         tbody.appendChild(tr);
       });
     }
-    document.getElementById('costs-total-val').textContent = total.toFixed(2);
+
+    /* Settlement calculations */
+    renderSettlement(costs, families);
+  }
+
+  function renderSettlement(costs, families) {
+    /* Build all known parties from expenses */
+    const allParties = new Set();
+    costs.forEach(c => {
+      if (c.paidBy) allParties.add(c.paidBy);
+      if (Array.isArray(c.splitBetween)) c.splitBetween.forEach(f => allParties.add(f));
+    });
+
+    /* Per-party: total paid, total owed */
+    const paid  = {}; // how much each party paid in total
+    const owes  = {}; // how much each party owes in total
+
+    allParties.forEach(p => { paid[p] = 0; owes[p] = 0; });
+
+    costs.forEach(c => {
+      const amt = c.amount || 0;
+      if (c.paidBy && allParties.has(c.paidBy)) paid[c.paidBy] += amt;
+
+      const split = Array.isArray(c.splitBetween) && c.splitBetween.length > 0 ? c.splitBetween : ['All'];
+      const share = amt / split.length;
+      split.forEach(p => {
+        if (!owes[p]) owes[p] = 0;
+        owes[p] += share;
+      });
+    });
+
+    /* Net balance: positive = owed money back, negative = owes money */
+    const balances = {};
+    allParties.forEach(p => { balances[p] = (paid[p]||0) - (owes[p]||0); });
+
+    /* Summary cards */
+    const summaryEl = document.getElementById('summary-totals');
+    summaryEl.innerHTML = '';
+    const totalSpend = costs.reduce((s, c) => s + (c.amount||0), 0);
+
+    // Total spend card
+    const totalCard = document.createElement('div'); totalCard.className = 'summary-total-card';
+    totalCard.innerHTML = `<div class="stc-label">Total Spend</div><div class="stc-val">$${totalSpend.toFixed(2)}</div><div class="stc-sub">${costs.length} expense${costs.length!==1?'s':''}</div>`;
+    summaryEl.appendChild(totalCard);
+
+    // Per-party cards
+    Array.from(allParties).forEach(p => {
+      const bal = balances[p] || 0;
+      const card = document.createElement('div'); card.className = 'summary-total-card';
+      card.innerHTML = `
+        <div class="stc-label">${esc(p)}</div>
+        <div class="stc-val">Paid $${(paid[p]||0).toFixed(2)}</div>
+        <div class="stc-sub">Owes $${(owes[p]||0).toFixed(2)} · Net ${bal>=0?'<span style="color:#2a7a3a">+':'<span style="color:var(--ember)'}$${Math.abs(bal).toFixed(2)}</span></div>`;
+      summaryEl.appendChild(card);
+    });
+
+    /* Debt settlement — simplified greedy algorithm */
+    const settlementEl = document.getElementById('settlement-body');
+    settlementEl.innerHTML = '';
+
+    const creditors = []; // owed money back
+    const debtors   = []; // owe money
+    allParties.forEach(p => {
+      const bal = balances[p];
+      if (bal > 0.005) creditors.push({ name: p, amount: bal });
+      else if (bal < -0.005) debtors.push({ name: p, amount: Math.abs(bal) });
+    });
+
+    if (!creditors.length && !debtors.length) {
+      settlementEl.innerHTML = `<div class="no-debts">🎉 Everyone's square! No settlements needed.</div>`;
+      return;
+    }
+    if (!debtors.length && costs.length > 0) {
+      settlementEl.innerHTML = `<div class="no-debts">✅ Balances are even — no transfers needed.</div>`;
+      return;
+    }
+
+    // Greedy settle
+    const settlements = [];
+    const c2 = creditors.map(x=>({...x}));
+    const d2 = debtors.map(x=>({...x}));
+    let ci = 0, di = 0;
+    while (ci < c2.length && di < d2.length) {
+      const transfer = Math.min(c2[ci].amount, d2[di].amount);
+      if (transfer > 0.005) {
+        settlements.push({ from: d2[di].name, to: c2[ci].name, amount: transfer });
+      }
+      c2[ci].amount -= transfer;
+      d2[di].amount -= transfer;
+      if (c2[ci].amount < 0.005) ci++;
+      if (d2[di].amount < 0.005) di++;
+    }
+
+    if (!settlements.length) {
+      settlementEl.innerHTML = `<div class="no-debts">✅ Balances are even — no transfers needed.</div>`;
+      return;
+    }
+
+    const table = document.createElement('table'); table.className = 'settlement-table';
+    table.innerHTML = `<thead><tr><th>From</th><th></th><th>To</th><th>Amount</th></tr></thead>`;
+    const tb = document.createElement('tbody');
+    settlements.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${esc(s.from)}</strong></td>
+        <td><span class="owes-arrow">→</span></td>
+        <td><strong>${esc(s.to)}</strong></td>
+        <td><span class="amount-owed">$${s.amount.toFixed(2)}</span></td>`;
+      tb.appendChild(tr);
+    });
+    table.appendChild(tb);
+    settlementEl.appendChild(table);
   }
 
   /* ══════════════════════════════════════════════════════

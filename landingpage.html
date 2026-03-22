@@ -53,14 +53,18 @@
     .trips-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
     @media(max-width:640px){.trips-grid{grid-template-columns:1fr;}}
 
+    /* TRIP CARD WRAPPER for delete button positioning */
+    .trip-card-wrap{position:relative;}
     .trip-card{background:#fff;border-radius:18px;border:1.5px solid rgba(122,179,138,0.18);box-shadow:var(--shadow-md);overflow:hidden;cursor:pointer;transition:var(--transition);text-decoration:none;color:inherit;display:block;}
     .trip-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--sage);}
     .trip-card-header{padding:18px 20px 14px;background:linear-gradient(135deg,var(--forest),var(--moss));position:relative;}
     .trip-card.completed .trip-card-header{background:linear-gradient(135deg,#3d3d3d,#5a5a5a);}
+    .trip-card.guest-trip .trip-card-header{background:linear-gradient(135deg,#1a3a55,#2a5a7a);}
     .trip-status-badge{position:absolute;top:14px;right:14px;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;letter-spacing:0.04em;}
     .badge-active{background:rgba(122,179,138,0.3);color:#b8f0c8;}
     .badge-upcoming{background:rgba(212,130,42,0.3);color:#ffe0b0;}
     .badge-completed{background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);}
+    .badge-guest{background:rgba(74,127,165,0.4);color:#c8e8ff;}
     .trip-card-icon{font-size:2rem;margin-bottom:8px;display:block;}
     .trip-card-name{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:2px;}
     .trip-card-location{font-size:0.8rem;color:rgba(245,240,232,0.65);}
@@ -73,6 +77,18 @@
     .member-chip{background:rgba(122,179,138,0.12);border:1px solid rgba(122,179,138,0.25);color:var(--moss);border-radius:20px;padding:2px 10px;font-size:0.75rem;font-weight:500;margin-right:4px;}
     .trip-arrow{color:var(--sage);font-size:1.1rem;}
     .trip-card.completed .trip-arrow{color:#aaa;}
+
+    /* MEMBER AVATARS ROW */
+    .trip-members-row{display:flex;align-items:center;margin-bottom:10px;padding:4px 0;}
+    .member-avatar-sm{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--moss),var(--sage));display:inline-flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;color:#fff;border:2px solid #fff;overflow:hidden;flex-shrink:0;margin-right:-8px;box-shadow:0 1px 4px rgba(0,0,0,0.12);}
+    .member-avatar-sm img{width:100%;height:100%;object-fit:cover;}
+    .member-avatar-sm.is-owner{background:linear-gradient(135deg,var(--amber),#b86020);}
+    .members-count-pill{font-size:0.75rem;color:var(--text-sec);margin-left:16px;white-space:nowrap;}
+
+    /* DELETE BUTTON */
+    .trip-delete-btn{position:absolute;top:12px;right:12px;z-index:10;width:32px;height:32px;border-radius:50%;background:rgba(192,96,58,0.9);border:2px solid rgba(255,255,255,0.4);color:#fff;font-size:0.82rem;cursor:pointer;display:none;align-items:center;justify-content:center;transition:var(--transition);box-shadow:0 2px 10px rgba(0,0,0,0.25);}
+    .trip-card-wrap:hover .trip-delete-btn{display:flex;}
+    .trip-delete-btn:hover{background:var(--ember);transform:scale(1.12);}
 
     .empty-state{text-align:center;padding:60px 20px;border:2px dashed rgba(122,179,138,0.3);border-radius:18px;background:rgba(122,179,138,0.04);grid-column:1/-1;}
     .empty-icon{font-size:3rem;margin-bottom:16px;display:block;opacity:0.45;}
@@ -118,9 +134,29 @@
     .review-box{background:#faf8f4;border-radius:12px;padding:16px;margin-bottom:4px;font-size:0.875rem;line-height:2.2;color:var(--text-sec);}
     .review-box strong{color:var(--forest);}
 
+    /* CONFIRM DELETE MODAL */
+    #confirm-overlay{display:none;position:fixed;inset:0;z-index:600;background:rgba(26,58,42,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
+    #confirm-overlay.open{display:flex;}
+    #confirm-box{background:#fff;border-radius:20px;width:100%;max-width:420px;margin:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.3);animation:modalIn .3s cubic-bezier(0.34,1.56,0.64,1) both;}
+    .confirm-header{background:linear-gradient(135deg,#8a1a0a,var(--ember));padding:22px 26px 18px;}
+    .confirm-header h3{font-family:'Playfair Display',serif;font-size:1.15rem;color:#fff;font-weight:700;}
+    .confirm-body{padding:22px 26px 26px;}
+    .confirm-body p{color:var(--text-sec);font-size:0.9rem;line-height:1.6;margin-bottom:22px;}
+    .confirm-body strong{color:var(--forest);}
+    .confirm-actions{display:flex;gap:10px;justify-content:flex-end;}
+    .btn-confirm-cancel{padding:10px 20px;border-radius:10px;border:1.5px solid #ddd;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;color:var(--text-sec);transition:var(--transition);}
+    .btn-confirm-cancel:hover{background:rgba(0,0,0,0.04);}
+    .btn-confirm-delete{padding:10px 22px;border-radius:10px;border:none;background:var(--ember);color:#fff;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;transition:var(--transition);}
+    .btn-confirm-delete:hover{background:#a04028;}
+    .btn-confirm-delete:disabled{opacity:0.6;cursor:not-allowed;}
+
+    #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--forest);color:#fff;padding:11px 22px;border-radius:12px;font-size:0.875rem;font-weight:500;opacity:0;transition:.3s ease;z-index:999;pointer-events:none;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
     @media(max-width:600px){
       .topnav{padding:0 16px;} .hero{padding:32px 16px 52px;} .hero h1{font-size:1.6rem;}
       .main{padding:28px 16px 60px;} .nav-user-name{display:none;} .form-row{grid-template-columns:1fr;}
+      .trip-delete-btn{display:flex !important;}
     }
   </style>
 </head>
@@ -167,7 +203,7 @@
   </main>
 </div>
 
-<!-- MODAL -->
+<!-- NEW TRIP MODAL -->
 <div id="modal-overlay">
   <div id="modal-box">
     <div class="modal-header">
@@ -180,8 +216,6 @@
         <div class="step-bar" id="sb2"></div>
         <div class="step-bar" id="sb3"></div>
       </div>
-
-      <!-- STEP 1 -->
       <div id="step1">
         <div style="font-weight:600;color:var(--forest);margin-bottom:16px;">📅 Trip Details</div>
         <label class="form-label">
@@ -217,8 +251,6 @@
           <button class="btn-modal-next" onclick="goStep(2)">Next: Add Families →</button>
         </div>
       </div>
-
-      <!-- STEP 2 -->
       <div id="step2" style="display:none;">
         <div style="font-weight:600;color:var(--forest);margin-bottom:16px;">👨‍👩‍👧 Add Families / Groups</div>
         <div id="families-list"></div>
@@ -233,8 +265,6 @@
           <button class="btn-modal-next" onclick="goStep(3)">Next: Review →</button>
         </div>
       </div>
-
-      <!-- STEP 3 -->
       <div id="step3" style="display:none;">
         <div style="font-weight:600;color:var(--forest);margin-bottom:16px;">✅ Review &amp; Create</div>
         <div class="review-box" id="review-box"></div>
@@ -247,6 +277,24 @@
     </div>
   </div>
 </div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div id="confirm-overlay">
+  <div id="confirm-box">
+    <div class="confirm-header">
+      <h3>🗑️ Delete Trip?</h3>
+    </div>
+    <div class="confirm-body">
+      <p>Are you sure you want to permanently delete <strong id="confirm-trip-name">this trip</strong>?<br>All data — checklist, meals, costs, and notes — will be lost forever.</p>
+      <div class="confirm-actions">
+        <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancel</button>
+        <button class="btn-confirm-delete" id="btn-confirm-delete" onclick="executeDelete()">Yes, Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
 
 <script>
   const FIREBASE_CONFIG = {
@@ -262,15 +310,19 @@
   const db   = firebase.firestore();
 
   let currentUser = null;
+  let pendingDeleteId = null;
+  let ownerTrips = [];
+  let guestTrips = [];
+  let _toastTimer = null;
 
-  /* AUTH GUARD */
+  /* ── AUTH GUARD ── */
   auth.onAuthStateChanged(user => {
     if (!user) { window.location.replace('index.html'); return; }
     currentUser = user;
     document.getElementById('auth-guard').style.display = 'none';
     document.getElementById('page-shell').style.display = 'block';
     setupNav(user);
-    loadTrips(user.uid);
+    loadTrips(user);
   });
 
   function setupNav(user) {
@@ -291,24 +343,49 @@
     document.getElementById('btn-new-trip').addEventListener('click', openModal);
   }
 
-  /* LOAD TRIPS — no orderBy, sort client-side to avoid Firestore composite index */
-  function loadTrips(uid) {
-    db.collection('trips').where('ownerUID', '==', uid)
+  /* ── LOAD TRIPS: owner + guest ── */
+  function loadTrips(user) {
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    /* Owner trips */
+    db.collection('trips').where('ownerUID', '==', user.uid)
       .onSnapshot(snap => {
-        const today = new Date(); today.setHours(0,0,0,0);
-        const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        all.sort((a, b) => (a.startDate||'') < (b.startDate||'') ? 1 : -1);
-        const active = [], completed = [];
-        all.forEach(t => {
-          const end = t.endDate ? new Date(t.endDate + 'T23:59:59') : null;
-          (end && end < today ? completed : active).push(t);
-        });
-        renderGrid('active-grid',    'active-count',    active,    false);
-        renderGrid('completed-grid', 'completed-count', completed, true);
-      }, err => console.error('[PlanAway] Firestore:', err));
+        ownerTrips = snap.docs.map(d => ({ id: d.id, _role:'owner', ...d.data() }));
+        mergeAndRender(today);
+      }, err => console.error('[PlanAway] owner trips:', err));
+
+    /* Guest trips — fetch all and filter client-side */
+    db.collection('trips').onSnapshot(snap => {
+      guestTrips = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(t =>
+          t.ownerUID !== user.uid &&
+          Array.isArray(t.guestMembers) &&
+          t.guestMembers.some(m => m.uid === user.uid)
+        )
+        .map(t => ({ ...t, _role:'guest' }));
+      mergeAndRender(today);
+    }, err => console.error('[PlanAway] guest trips:', err));
   }
 
-  /* HELPERS */
+  function mergeAndRender(today) {
+    const seen = new Set();
+    const all = [];
+    [...ownerTrips, ...guestTrips].forEach(t => {
+      if (!seen.has(t.id)) { seen.add(t.id); all.push(t); }
+    });
+    all.sort((a,b) => (a.startDate||'') < (b.startDate||'') ? 1 : -1);
+
+    const active = [], completed = [];
+    all.forEach(t => {
+      const end = t.endDate ? new Date(t.endDate+'T23:59:59') : null;
+      (end && end < today ? completed : active).push(t);
+    });
+    renderGrid('active-grid',    'active-count',    active,    false);
+    renderGrid('completed-grid', 'completed-count', completed, true);
+  }
+
+  /* ── HELPERS ── */
   function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function modeIcon(m){ return {tent:'⛺',rv:'🚐',both:'⛺🚐',cabin:'🏡'}[m]||'🏕️'; }
   function fmtDate(ds){
@@ -319,8 +396,14 @@
     if(!s||!e) return '—';
     return Math.max(0, Math.round((new Date(e)-new Date(s))/86400000));
   }
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+  }
 
-  /* RENDER GRID */
+  /* ── RENDER GRID ── */
   function renderGrid(gridId, countId, trips, isCompleted) {
     const grid = document.getElementById(gridId);
     document.getElementById(countId).textContent = `${trips.length} trip${trips.length!==1?'s':''}`;
@@ -339,20 +422,65 @@
 
     const today = new Date(); today.setHours(0,0,0,0);
     trips.forEach((trip, i) => {
+      const isGuest = trip._role === 'guest';
+      const isOwner = trip._role === 'owner';
       const start = trip.startDate ? new Date(trip.startDate+'T12:00:00') : null;
-      const end   = trip.endDate   ? new Date(trip.endDate  +'T12:00:00') : null;
-      let badgeClass='badge-upcoming', badgeText='Upcoming';
-      if (isCompleted) { badgeClass='badge-completed'; badgeText='Completed'; }
-      else if (start && start<=today && end && end>=today) { badgeClass='badge-active'; badgeText='Active'; }
+      const end   = trip.endDate   ? new Date(trip.endDate+'T12:00:00')   : null;
 
+      let badgeClass='badge-upcoming', badgeText='Upcoming';
+      if (isCompleted)                                             { badgeClass='badge-completed'; badgeText='Completed'; }
+      else if (isGuest)                                            { badgeClass='badge-guest';     badgeText='👥 Guest'; }
+      else if (start && start<=today && end && end>=today)        { badgeClass='badge-active';    badgeText='Active'; }
+
+      /* Build members avatar row */
+      const ownerInfo = {
+        displayName: trip.ownerDisplayName || trip.ownerEmail || 'Owner',
+        photoURL:    trip.ownerPhotoURL || '',
+        isOwner: true,
+      };
+      const guests = Array.isArray(trip.guestMembers) ? trip.guestMembers : [];
+      const allMembers = [ownerInfo, ...guests];
+      const maxShow = 5;
+
+      const avatarsHtml = allMembers.slice(0, maxShow).map(m => {
+        const nm = m.displayName || m.email || '?';
+        const initials = nm.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        if (m.photoURL) {
+          return `<div class="member-avatar-sm${m.isOwner?' is-owner':''}" title="${esc(nm)}"><img src="${esc(m.photoURL)}" alt="${esc(nm)}" /></div>`;
+        }
+        return `<div class="member-avatar-sm${m.isOwner?' is-owner':''}" title="${esc(nm)}">${esc(initials)}</div>`;
+      }).join('');
+      const membersLabel = `<span class="members-count-pill">${allMembers.length} member${allMembers.length!==1?'s':''}</span>`;
+
+      /* Family chips */
       const families = Array.isArray(trip.families) ? trip.families : [];
       const chips = families.slice(0,3).map(f=>`<span class="member-chip">${esc(f.name||f)}</span>`).join('')
         + (families.length>3 ? `<span class="member-chip">+${families.length-3}</span>` : '');
 
+      const wrap = document.createElement('div');
+      wrap.className = 'trip-card-wrap fade-in';
+      wrap.style.animationDelay = `${i*0.06}s`;
+
+      /* Delete button — owner only */
+      if (isOwner) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'trip-delete-btn';
+        delBtn.title = 'Delete this trip';
+        delBtn.innerHTML = '🗑️';
+        delBtn.addEventListener('click', e => {
+          e.preventDefault(); e.stopPropagation();
+          openConfirm(trip.id, trip.name || 'this trip');
+        });
+        wrap.appendChild(delBtn);
+      }
+
+      const plannerUrl = isGuest
+        ? `planner.html?invite=${encodeURIComponent(trip.tripCode||'')}`
+        : `planner.html#${trip.id}`;
+
       const card = document.createElement('a');
-      card.href = `planner.html#${trip.id}`;
-      card.className = `trip-card fade-in${isCompleted?' completed':''}`;
-      card.style.animationDelay = `${i*0.06}s`;
+      card.href = plannerUrl;
+      card.className = `trip-card${isCompleted?' completed':''}${isGuest?' guest-trip':''}`;
       card.innerHTML = `
         <div class="trip-card-header">
           <span class="trip-status-badge ${badgeClass}">${badgeText}</span>
@@ -361,23 +489,56 @@
           <div class="trip-card-location">📍 ${esc(trip.location||'No location set')}</div>
         </div>
         <div class="trip-card-body">
+          <div class="trip-members-row">
+            ${avatarsHtml}
+            ${membersLabel}
+          </div>
           <div class="trip-meta">
             <div class="trip-meta-item"><span class="trip-meta-label">Start</span><span class="trip-meta-value">${fmtDate(trip.startDate)}</span></div>
             <div class="trip-meta-item"><span class="trip-meta-label">End</span><span class="trip-meta-value">${fmtDate(trip.endDate)}</span></div>
             <div class="trip-meta-item"><span class="trip-meta-label">Nights</span><span class="trip-meta-value">${nightsCount(trip.startDate,trip.endDate)}</span></div>
           </div>
           <div class="trip-card-footer">
-            <div>${chips||'<span style="color:#aaa;font-size:0.8rem;">No families added</span>'}</div>
+            <div>${chips||`<span style="color:#aaa;font-size:0.8rem;">${isGuest?'Joined as guest':'No families added'}</span>`}</div>
             <span class="trip-arrow">→</span>
           </div>
         </div>`;
-      grid.appendChild(card);
+      wrap.appendChild(card);
+      grid.appendChild(wrap);
     });
   }
 
-  /* MODAL */
-  let modalFamilies = [];
+  /* ── CONFIRM DELETE ── */
+  function openConfirm(tripId, tripName) {
+    pendingDeleteId = tripId;
+    document.getElementById('confirm-trip-name').textContent = tripName;
+    const btn = document.getElementById('btn-confirm-delete');
+    btn.disabled = false; btn.textContent = 'Yes, Delete';
+    document.getElementById('confirm-overlay').classList.add('open');
+  }
+  function closeConfirm() {
+    pendingDeleteId = null;
+    document.getElementById('confirm-overlay').classList.remove('open');
+  }
+  async function executeDelete() {
+    if (!pendingDeleteId) return;
+    const btn = document.getElementById('btn-confirm-delete');
+    btn.disabled = true; btn.textContent = 'Deleting…';
+    try {
+      await db.collection('trips').doc(pendingDeleteId).delete();
+      showToast('Trip deleted successfully.');
+      closeConfirm();
+    } catch (err) {
+      showToast('Error deleting: ' + (err.message||'try again.'));
+      btn.disabled = false; btn.textContent = 'Yes, Delete';
+    }
+  }
+  document.getElementById('confirm-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('confirm-overlay')) closeConfirm();
+  });
 
+  /* ── MODAL ── */
+  let modalFamilies = [];
   function openModal() {
     modalFamilies = [];
     ['f-name','f-location','f-family-input'].forEach(id => document.getElementById(id).value='');
@@ -389,11 +550,7 @@
     document.getElementById('modal-overlay').classList.add('open');
     setTimeout(() => document.getElementById('f-name').focus(), 100);
   }
-
-  function closeModal() {
-    document.getElementById('modal-overlay').classList.remove('open');
-  }
-
+  function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
   document.getElementById('modal-overlay').addEventListener('click', e => {
     if (e.target === document.getElementById('modal-overlay')) closeModal();
   });
@@ -420,8 +577,7 @@
     if (!start) return fail('Please select a start date.');
     if (!end)   return fail('Please select an end date.');
     const today = new Date(); today.setHours(0,0,0,0);
-    const s = new Date(start+'T00:00:00');
-    const e = new Date(end  +'T00:00:00');
+    const s = new Date(start+'T00:00:00'); const e = new Date(end+'T00:00:00');
     if (s < today) return fail('Start date cannot be in the past.');
     if (e <= s)    return fail('End date must be after start date.');
     return true;
@@ -441,20 +597,15 @@
     const el = document.getElementById('families-list');
     el.innerHTML = '';
     modalFamilies.forEach((f, i) => {
-      const row = document.createElement('div');
-      row.className = 'family-row';
+      const row = document.createElement('div'); row.className = 'family-row';
       const span = document.createElement('span');
-      span.style.fontWeight = '500';
-      span.style.color = 'var(--forest)';
+      span.style.cssText = 'font-weight:500;color:var(--forest);';
       span.textContent = `👨‍👩‍👧 ${f.name}`;
       const btn = document.createElement('button');
-      btn.className = 'family-row-remove';
-      btn.textContent = '✕';
+      btn.className = 'family-row-remove'; btn.textContent = '✕';
       btn.setAttribute('aria-label', `Remove ${f.name}`);
       btn.addEventListener('click', () => { modalFamilies.splice(i,1); renderFamiliesList(); });
-      row.appendChild(span);
-      row.appendChild(btn);
-      el.appendChild(row);
+      row.appendChild(span); row.appendChild(btn); el.appendChild(row);
     });
   }
 
@@ -475,70 +626,47 @@
       ['Families', modalFamilies.length ? modalFamilies.map(f=>f.name).join(', ') : 'None — you can add later'],
     ].forEach(([label, value]) => {
       const div = document.createElement('div');
-      const b = document.createElement('strong');
-      b.textContent = label + ': ';
-      div.appendChild(b);
-      div.appendChild(document.createTextNode(value));
-      box.appendChild(div);
+      const b = document.createElement('strong'); b.textContent = label+': ';
+      div.appendChild(b); div.appendChild(document.createTextNode(value)); box.appendChild(div);
     });
   }
 
   async function createTrip() {
-    const btn   = document.getElementById('btn-create');
+    const btn = document.getElementById('btn-create');
     const errEl = document.getElementById('err3');
     btn.disabled = true; btn.textContent = 'Creating…';
     errEl.classList.remove('visible');
-
-    /* Double-check auth is still live before writing */
     if (!currentUser) {
       btn.disabled = false; btn.textContent = '🏕️ Create Trip';
-      errEl.textContent = 'You are not signed in. Please refresh and sign in again.';
-      errEl.classList.add('visible');
-      return;
+      errEl.textContent = 'You are not signed in. Please refresh.';
+      errEl.classList.add('visible'); return;
     }
-
     const name     = document.getElementById('f-name').value.trim();
     const loc      = document.getElementById('f-location').value.trim();
     const start    = document.getElementById('f-start').value;
     const end      = document.getElementById('f-end').value;
     const mode     = document.getElementById('f-mode').value;
     const tripCode = Math.random().toString(36).slice(2,8).toUpperCase();
-
-    const payload = {
-      name,
-      location:  loc,
-      startDate: start,
-      endDate:   end,
-      mode,
-      families:  modalFamilies,
-      tripCode,
-      ownerUID:  currentUser.uid,
-      ownerEmail:currentUser.email,
+    const payload  = {
+      name, location:loc, startDate:start, endDate:end, mode,
+      families: modalFamilies, tripCode,
+      ownerUID:         currentUser.uid,
+      ownerEmail:       currentUser.email,
+      ownerDisplayName: currentUser.displayName || currentUser.email,
+      ownerPhotoURL:    currentUser.photoURL || '',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
-
-    console.log('[PlanAway] Writing trip:', payload);
-
     try {
       const docRef = await db.collection('trips').add(payload);
-      console.log('[PlanAway] Trip created:', docRef.id);
       closeModal();
       window.location.href = 'planner.html#' + docRef.id;
     } catch (err) {
-      console.error('[PlanAway] createTrip FAILED:', err.code, err.message, err);
       btn.disabled = false; btn.textContent = '🏕️ Create Trip';
-
-      /* Show the specific Firebase error so it's diagnosable */
       let msg = 'Failed to create trip.';
-      if (err.code === 'permission-denied') {
-        msg = 'Permission denied by Firestore. Go to Firebase Console → Firestore → Rules and set them to allow writes. See instructions below.';
-      } else if (err.code === 'unavailable' || err.message?.includes('network')) {
-        msg = 'Network error — check your internet connection and try again.';
-      } else if (err.code) {
-        msg = `Error (${err.code}): ${err.message}`;
-      }
-      errEl.textContent = msg;
-      errEl.classList.add('visible');
+      if (err.code==='permission-denied') msg='Permission denied by Firestore. Check your Firebase rules.';
+      else if (err.code==='unavailable'||err.message?.includes('network')) msg='Network error — check your connection.';
+      else if (err.code) msg=`Error (${err.code}): ${err.message}`;
+      errEl.textContent = msg; errEl.classList.add('visible');
     }
   }
 </script>
