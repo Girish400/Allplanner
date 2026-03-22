@@ -12,575 +12,386 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <style>
     :root {
-      --forest:   #1a3a2a;
-      --moss:     #2e5c3e;
-      --sage:     #7ab38a;
-      --cream:    #f5f0e8;
-      --amber:    #d4822a;
-      --ember:    #c0603a;
-      --sky:      #4a7fa5;
-      --dusk:     #e8ddd0;
-      --text-pri: #1a2518;
-      --text-sec: #4a5a44;
-      --radius:   14px;
-      --shadow-md: 0 4px 24px rgba(26,58,42,0.10);
-      --shadow-lg: 0 12px 48px rgba(26,58,42,0.14);
-      --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+      --forest:#1a3a2a; --moss:#2e5c3e; --sage:#7ab38a; --cream:#f5f0e8;
+      --amber:#d4822a; --ember:#c0603a; --sky:#4a7fa5;
+      --text-pri:#1a2518; --text-sec:#4a5a44;
+      --shadow-md:0 4px 24px rgba(26,58,42,0.10);
+      --shadow-lg:0 12px 48px rgba(26,58,42,0.14);
+      --transition:0.25s cubic-bezier(0.4,0,0.2,1);
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; }
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--cream);
-      color: var(--text-pri);
-      min-height: 100vh;
-    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text-pri);min-height:100vh;}
 
-    /* AUTH GUARD OVERLAY */
-    #auth-guard {
-      position: fixed; inset: 0; z-index: 1000;
-      background: var(--cream);
-      display: flex; align-items: center; justify-content: center;
-    }
-    .guard-spinner {
-      width: 44px; height: 44px;
-      border: 3px solid rgba(122,179,138,0.2);
-      border-top-color: var(--moss);
-      border-radius: 50%;
-      animation: spin 0.85s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    #auth-guard{position:fixed;inset:0;z-index:1000;background:var(--cream);display:flex;align-items:center;justify-content:center;}
+    .guard-spinner{width:44px;height:44px;border:3px solid rgba(122,179,138,0.2);border-top-color:var(--moss);border-radius:50%;animation:spin .85s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #page-shell{display:none;}
 
-    /* TOP NAV */
-    .topnav {
-      background: var(--forest);
-      padding: 0 32px;
-      display: flex; align-items: center; justify-content: space-between;
-      height: 60px;
-      position: sticky; top: 0; z-index: 100;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.18);
-    }
-    .nav-brand {
-      display: flex; align-items: center; gap: 10px;
-      font-family: 'Playfair Display', serif;
-      font-size: 1.25rem; font-weight: 700;
-      color: var(--cream); text-decoration: none;
-    }
-    .nav-brand span { font-size: 1.4rem; }
-    .nav-right { display: flex; align-items: center; gap: 16px; }
-    .nav-avatar {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--moss), var(--sage));
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 600; color: #fff; font-size: 0.9rem;
-      cursor: pointer; border: 2px solid var(--sage);
-      overflow: hidden;
-    }
-    .nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .btn-signout {
-      padding: 8px 18px; border-radius: 8px;
-      background: rgba(192,96,58,0.15); color: #f5c8b8;
-      border: 1px solid rgba(192,96,58,0.3);
-      font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
-      font-weight: 500; cursor: pointer;
-      transition: var(--transition);
-    }
-    .btn-signout:hover { background: rgba(192,96,58,0.28); }
+    .topnav{background:var(--forest);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,0.18);}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:700;color:var(--cream);text-decoration:none;}
+    .nav-right{display:flex;align-items:center;gap:14px;}
+    .nav-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--moss),var(--sage));display:flex;align-items:center;justify-content:center;font-weight:600;color:#fff;font-size:0.9rem;border:2px solid var(--sage);overflow:hidden;flex-shrink:0;}
+    .nav-avatar img{width:100%;height:100%;object-fit:cover;}
+    .nav-user-name{color:rgba(245,240,232,0.75);font-size:0.875rem;}
+    .btn-signout{padding:8px 18px;border-radius:8px;background:rgba(192,96,58,0.15);color:#f5c8b8;border:1px solid rgba(192,96,58,0.3);font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:500;cursor:pointer;transition:var(--transition);}
+    .btn-signout:hover{background:rgba(192,96,58,0.28);}
 
-    /* HERO BAND */
-    .hero {
-      background: linear-gradient(135deg, var(--forest) 0%, #2a5a3e 60%, #3a7050 100%);
-      padding: 48px 32px 56px;
-      position: relative; overflow: hidden;
-    }
-    .hero::after {
-      content: '';
-      position: absolute; bottom: -2px; left: 0; right: 0; height: 40px;
-      background: var(--cream);
-      clip-path: ellipse(55% 100% at 50% 100%);
-    }
-    .hero-inner { max-width: 900px; margin: 0 auto; }
-    .hero h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 2.2rem; font-weight: 700;
-      color: #fff; margin-bottom: 8px;
-    }
-    .hero p { color: rgba(245,240,232,0.7); font-size: 1rem; }
-    .hero-actions { margin-top: 28px; }
-    .btn-new-trip {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 13px 28px; border-radius: 12px;
-      background: var(--amber); color: #fff;
-      border: none; font-family: 'DM Sans', sans-serif;
-      font-size: 0.95rem; font-weight: 600;
-      cursor: pointer; transition: var(--transition);
-      text-decoration: none;
-      box-shadow: 0 4px 20px rgba(212,130,42,0.4);
-    }
-    .btn-new-trip:hover { background: #c0721e; transform: translateY(-2px); }
+    .hero{background:linear-gradient(135deg,var(--forest) 0%,#2a5a3e 60%,#3a7050 100%);padding:48px 32px 64px;position:relative;overflow:hidden;}
+    .hero::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:40px;background:var(--cream);clip-path:ellipse(55% 100% at 50% 100%);}
+    .hero-inner{max-width:920px;margin:0 auto;}
+    .hero h1{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:#fff;margin-bottom:8px;}
+    .hero p{color:rgba(245,240,232,0.65);font-size:1rem;margin-bottom:28px;}
+    .btn-new-trip{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:12px;background:var(--amber);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer;transition:var(--transition);box-shadow:0 4px 20px rgba(212,130,42,0.4);}
+    .btn-new-trip:hover{background:#c0721e;transform:translateY(-2px);}
 
-    /* MAIN CONTENT */
-    .main { max-width: 900px; margin: 0 auto; padding: 40px 32px 80px; }
+    .main{max-width:920px;margin:0 auto;padding:40px 32px 80px;}
+    .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+    .section-title{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:700;color:var(--forest);}
+    .section-badge{background:rgba(122,179,138,0.18);color:var(--moss);border-radius:20px;padding:3px 12px;font-size:0.78rem;font-weight:600;}
+    .section-divider{margin:40px 0 32px;border:none;border-top:1.5px solid rgba(122,179,138,0.18);}
 
-    /* SECTION HEADER */
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    .section-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.35rem; font-weight: 700; color: var(--forest);
-    }
-    .section-badge {
-      background: rgba(122,179,138,0.18);
-      color: var(--moss); border-radius: 20px;
-      padding: 3px 12px; font-size: 0.78rem; font-weight: 600;
-    }
+    .trips-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    @media(max-width:640px){.trips-grid{grid-template-columns:1fr;}}
 
-    /* TRIP CARDS GRID */
-    .trips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 640px) { .trips-grid { grid-template-columns: 1fr; } }
+    .trip-card{background:#fff;border-radius:18px;border:1.5px solid rgba(122,179,138,0.18);box-shadow:var(--shadow-md);overflow:hidden;cursor:pointer;transition:var(--transition);text-decoration:none;color:inherit;display:block;}
+    .trip-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--sage);}
+    .trip-card-header{padding:18px 20px 14px;background:linear-gradient(135deg,var(--forest),var(--moss));position:relative;}
+    .trip-card.completed .trip-card-header{background:linear-gradient(135deg,#3d3d3d,#5a5a5a);}
+    .trip-status-badge{position:absolute;top:14px;right:14px;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;letter-spacing:0.04em;}
+    .badge-active{background:rgba(122,179,138,0.3);color:#b8f0c8;}
+    .badge-upcoming{background:rgba(212,130,42,0.3);color:#ffe0b0;}
+    .badge-completed{background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);}
+    .trip-card-icon{font-size:2rem;margin-bottom:8px;display:block;}
+    .trip-card-name{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:2px;}
+    .trip-card-location{font-size:0.8rem;color:rgba(245,240,232,0.65);}
+    .trip-card-body{padding:14px 20px 16px;}
+    .trip-meta{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;}
+    .trip-meta-item{display:flex;flex-direction:column;gap:1px;}
+    .trip-meta-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--sage);font-weight:600;}
+    .trip-meta-value{font-size:0.875rem;font-weight:500;color:var(--text-pri);}
+    .trip-card-footer{border-top:1px solid rgba(122,179,138,0.15);padding-top:12px;display:flex;align-items:center;justify-content:space-between;}
+    .member-chip{background:rgba(122,179,138,0.12);border:1px solid rgba(122,179,138,0.25);color:var(--moss);border-radius:20px;padding:2px 10px;font-size:0.75rem;font-weight:500;margin-right:4px;}
+    .trip-arrow{color:var(--sage);font-size:1.1rem;}
+    .trip-card.completed .trip-arrow{color:#aaa;}
 
-    /* TRIP CARD */
-    .trip-card {
-      background: #fff;
-      border-radius: 18px;
-      border: 1.5px solid rgba(122,179,138,0.18);
-      box-shadow: var(--shadow-md);
-      overflow: hidden;
-      cursor: pointer;
-      transition: var(--transition);
-      text-decoration: none; color: inherit;
-      display: block;
-    }
-    .trip-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--sage); }
-    .trip-card-header {
-      padding: 18px 20px 14px;
-      background: linear-gradient(135deg, var(--forest), var(--moss));
-      position: relative;
-    }
-    .trip-card.completed .trip-card-header {
-      background: linear-gradient(135deg, #3a3a3a, #5a5a5a);
-    }
-    .trip-status-badge {
-      position: absolute; top: 14px; right: 14px;
-      padding: 3px 10px; border-radius: 20px;
-      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
-    }
-    .badge-active { background: rgba(122,179,138,0.3); color: #b8f0c8; }
-    .badge-upcoming { background: rgba(212,130,42,0.3); color: #ffe0b0; }
-    .badge-completed { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.6); }
-    .trip-card-icon { font-size: 2rem; margin-bottom: 8px; display: block; }
-    .trip-card-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.1rem; font-weight: 700; color: #fff;
-      margin-bottom: 2px;
-    }
-    .trip-card-location { font-size: 0.8rem; color: rgba(245,240,232,0.65); }
-    .trip-card-body { padding: 14px 20px 16px; }
-    .trip-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
-    .trip-meta-item { display: flex; flex-direction: column; gap: 1px; }
-    .trip-meta-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sage); font-weight: 600; }
-    .trip-meta-value { font-size: 0.875rem; font-weight: 500; color: var(--text-pri); }
-    .trip-card-footer {
-      border-top: 1px solid rgba(122,179,138,0.15);
-      padding-top: 12px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .trip-members {
-      display: flex; gap: -4px;
-    }
-    .member-chip {
-      background: rgba(122,179,138,0.12);
-      border: 1px solid rgba(122,179,138,0.25);
-      color: var(--moss); border-radius: 20px;
-      padding: 2px 10px; font-size: 0.75rem; font-weight: 500;
-      margin-right: 4px;
-    }
-    .trip-arrow { color: var(--sage); font-size: 1.1rem; }
-    .trip-card.completed .trip-arrow { color: #aaa; }
-    .trip-card.completed .trip-card-name { opacity: 0.85; }
+    .empty-state{text-align:center;padding:60px 20px;border:2px dashed rgba(122,179,138,0.3);border-radius:18px;background:rgba(122,179,138,0.04);grid-column:1/-1;}
+    .empty-icon{font-size:3rem;margin-bottom:16px;display:block;opacity:0.45;}
+    .empty-title{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--forest);margin-bottom:8px;}
+    .empty-sub{color:var(--text-sec);font-size:0.875rem;}
 
-    /* EMPTY STATE */
-    .empty-state {
-      text-align: center; padding: 60px 20px;
-      border: 2px dashed rgba(122,179,138,0.3);
-      border-radius: 18px; background: rgba(122,179,138,0.04);
-    }
-    .empty-icon { font-size: 3rem; margin-bottom: 16px; display: block; opacity: 0.5; }
-    .empty-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--forest); margin-bottom: 8px; }
-    .empty-sub { color: var(--text-sec); font-size: 0.875rem; margin-bottom: 20px; }
+    .skeleton{animation:shimmer 1.4s ease infinite;border-radius:18px;background:linear-gradient(90deg,#e8e0d0 25%,#f5f0e8 50%,#e8e0d0 75%);background-size:200% 100%;height:200px;}
+    @keyframes shimmer{to{background-position:-200% 0}}
+    .fade-in{animation:fadeIn .4s ease both;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
-    /* DIVIDER */
-    .section-divider { margin: 40px 0 32px; border: none; border-top: 1.5px solid rgba(122,179,138,0.18); }
+    /* MODAL */
+    #modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(26,58,42,0.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
+    #modal-overlay.open{display:flex;}
+    #modal-box{background:#fff;border-radius:22px;width:100%;max-width:500px;margin:20px;box-shadow:0 24px 80px rgba(26,58,42,0.25);overflow:hidden;animation:modalIn .35s cubic-bezier(0.34,1.56,0.64,1) both;}
+    @keyframes modalIn{from{opacity:0;transform:translateY(24px) scale(0.97)}to{opacity:1;transform:none}}
+    .modal-header{background:linear-gradient(135deg,var(--forest),var(--moss));padding:26px 30px 22px;}
+    .modal-header h2{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:700;color:#fff;margin-bottom:4px;}
+    .modal-header p{color:rgba(245,240,232,0.6);font-size:0.85rem;}
+    .modal-body{padding:26px 30px 30px;}
+    .step-progress{display:flex;gap:8px;margin-bottom:22px;}
+    .step-bar{flex:1;height:4px;border-radius:4px;background:#ddd;transition:background .3s;}
+    .step-bar.done{background:var(--moss);}
+    .form-label{display:block;margin-bottom:14px;}
+    .form-label-text{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--sage);font-weight:600;display:block;margin-bottom:6px;}
+    .form-input{width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.9rem;background:#faf8f4;outline:none;transition:border-color .2s;color:var(--text-pri);}
+    .form-input:focus{border-color:var(--sage);}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+    .form-error{color:#b33a2a;font-size:0.82rem;margin-bottom:10px;display:none;padding:8px 12px;background:rgba(179,58,42,0.06);border-radius:8px;border:1px solid rgba(179,58,42,0.2);}
+    .form-error.visible{display:block;}
+    .modal-actions{display:flex;gap:10px;justify-content:space-between;margin-top:20px;}
+    .btn-modal-back{padding:11px 22px;border-radius:10px;border:1.5px solid #ddd;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;color:var(--text-sec);transition:var(--transition);}
+    .btn-modal-back:hover{background:rgba(0,0,0,0.04);}
+    .btn-modal-next{padding:11px 24px;border-radius:10px;border:none;background:var(--moss);color:#fff;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;transition:var(--transition);}
+    .btn-modal-next:hover{background:var(--forest);}
+    .btn-create{padding:12px 28px;border-radius:10px;border:none;background:var(--amber);color:#fff;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;transition:var(--transition);box-shadow:0 4px 16px rgba(212,130,42,0.3);}
+    .btn-create:hover{background:#c0721e;}
+    .btn-create:disabled,.btn-modal-next:disabled{opacity:0.55;cursor:not-allowed;}
+    .family-row{display:flex;align-items:center;justify-content:space-between;background:#faf8f4;border:1.5px solid rgba(122,179,138,0.2);border-radius:10px;padding:10px 14px;margin-bottom:8px;}
+    .family-row-remove{background:none;border:none;color:var(--ember);cursor:pointer;font-size:1rem;padding:0 4px;line-height:1;}
+    .family-add-row{display:flex;gap:8px;margin-bottom:6px;}
+    .btn-add-family{padding:10px 16px;border-radius:10px;border:none;background:var(--sage);color:#fff;font-weight:700;font-size:1.1rem;cursor:pointer;flex-shrink:0;}
+    .review-box{background:#faf8f4;border-radius:12px;padding:16px;margin-bottom:4px;font-size:0.875rem;line-height:2.2;color:var(--text-sec);}
+    .review-box strong{color:var(--forest);}
 
-    /* LOADING SKELETON */
-    .skeleton { animation: shimmer 1.4s ease infinite; border-radius: 12px; background: linear-gradient(90deg, #e8e0d0 25%, #f5f0e8 50%, #e8e0d0 75%); background-size: 200% 100%; }
-    @keyframes shimmer { to { background-position: -200% 0; } }
-    .skeleton-card { height: 190px; border-radius: 18px; }
-
-    /* ANIMATIONS */
-    .fade-in { animation: fadeIn 0.4s ease both; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-
-    @media (max-width: 600px) {
-      .topnav { padding: 0 16px; }
-      .hero { padding: 32px 16px 48px; }
-      .hero h1 { font-size: 1.6rem; }
-      .main { padding: 28px 16px 60px; }
+    @media(max-width:600px){
+      .topnav{padding:0 16px;} .hero{padding:32px 16px 52px;} .hero h1{font-size:1.6rem;}
+      .main{padding:28px 16px 60px;} .nav-user-name{display:none;} .form-row{grid-template-columns:1fr;}
     }
   </style>
 </head>
 <body>
 
-<!-- AUTH GUARD -->
-<div id="auth-guard">
-  <div class="guard-spinner"></div>
-</div>
+<div id="auth-guard"><div class="guard-spinner"></div></div>
 
-<!-- TOP NAV -->
-<nav class="topnav" id="topnav" style="display:none">
-  <a class="nav-brand" href="landingpage.html">
-    <span>🏕️</span> PlanAway
-  </a>
-  <div class="nav-right">
-    <div class="nav-avatar" id="nav-avatar" title=""></div>
-    <button class="btn-signout" id="btn-signout">Sign Out</button>
-  </div>
-</nav>
+<div id="page-shell">
+  <nav class="topnav">
+    <a class="nav-brand" href="landingpage.html">🏕️ PlanAway</a>
+    <div class="nav-right">
+      <div class="nav-avatar" id="nav-avatar"></div>
+      <span class="nav-user-name" id="nav-user-name"></span>
+      <button class="btn-signout" id="btn-signout">Sign Out</button>
+    </div>
+  </nav>
 
-<!-- HERO -->
-<div class="hero" id="hero" style="display:none">
-  <div class="hero-inner">
-    <h1 id="hero-greeting">My Trips</h1>
-    <p id="hero-sub">All your adventures, in one place.</p>
-    <div class="hero-actions">
+  <div class="hero">
+    <div class="hero-inner">
+      <h1 id="hero-greeting">My Trips</h1>
+      <p>Plan, track, and relive your adventures.</p>
       <button class="btn-new-trip" id="btn-new-trip">＋ New Trip</button>
     </div>
   </div>
+
+  <main class="main">
+    <div class="section-header">
+      <div class="section-title">Active &amp; Upcoming</div>
+      <div class="section-badge" id="active-count">—</div>
+    </div>
+    <div class="trips-grid" id="active-grid">
+      <div class="skeleton"></div><div class="skeleton"></div>
+    </div>
+
+    <hr class="section-divider" />
+
+    <div class="section-header">
+      <div class="section-title">Completed Trips</div>
+      <div class="section-badge" id="completed-count">—</div>
+    </div>
+    <div class="trips-grid" id="completed-grid">
+      <div class="skeleton" style="height:140px;"></div>
+    </div>
+  </main>
 </div>
 
-<!-- MAIN -->
-<main class="main" id="main-content" style="display:none">
-
-  <!-- ACTIVE / UPCOMING TRIPS -->
-  <div class="section-header">
-    <div class="section-title">Active &amp; Upcoming</div>
-    <div class="section-badge" id="active-count">0 trips</div>
-  </div>
-  <div class="trips-grid" id="active-trips-grid">
-    <div class="skeleton skeleton-card"></div>
-    <div class="skeleton skeleton-card"></div>
-  </div>
-
-  <hr class="section-divider" />
-
-  <!-- COMPLETED TRIPS -->
-  <div class="section-header">
-    <div class="section-title">Completed Trips</div>
-    <div class="section-badge" id="completed-count">0 trips</div>
-  </div>
-  <div class="trips-grid" id="completed-trips-grid">
-    <div class="skeleton skeleton-card"></div>
-  </div>
-
-</main>
-
-<!-- NEW TRIP MODAL -->
-<div id="modal-overlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(26,58,42,0.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
-  <div id="modal-box" style="background:#fff;border-radius:22px;padding:0;width:100%;max-width:500px;margin:20px;box-shadow:0 24px 80px rgba(26,58,42,0.25);overflow:hidden;animation:cardIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;">
-    <div style="background:linear-gradient(135deg,var(--forest),var(--moss));padding:28px 32px 24px;">
-      <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:4px;">🏕️ Plan a New Trip</div>
-      <div style="color:rgba(245,240,232,0.65);font-size:0.85rem;">Fill in the details to get started</div>
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <div class="modal-header">
+      <h2>🏕️ Plan a New Trip</h2>
+      <p>Fill in the details to start your adventure</p>
     </div>
-    <div style="padding:28px 32px 32px;">
-
-      <!-- Step indicators -->
-      <div style="display:flex;gap:8px;margin-bottom:24px;">
-        <div id="step-ind-1" style="flex:1;height:4px;border-radius:4px;background:var(--moss);transition:0.3s;"></div>
-        <div id="step-ind-2" style="flex:1;height:4px;border-radius:4px;background:#ddd;transition:0.3s;"></div>
-        <div id="step-ind-3" style="flex:1;height:4px;border-radius:4px;background:#ddd;transition:0.3s;"></div>
+    <div class="modal-body">
+      <div class="step-progress">
+        <div class="step-bar" id="sb1"></div>
+        <div class="step-bar" id="sb2"></div>
+        <div class="step-bar" id="sb3"></div>
       </div>
 
-      <!-- STEP 1: Trip Details -->
-      <div id="step-1">
-        <div style="font-weight:600;font-size:1rem;color:var(--forest);margin-bottom:18px;">📅 Trip Details</div>
-
-        <label style="display:block;margin-bottom:14px;">
-          <span style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--sage);font-weight:600;display:block;margin-bottom:6px;">Trip Name</span>
-          <input id="f-name" type="text" placeholder="e.g. Yosemite Family Adventure 2026"
-            style="width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.9rem;background:#faf8f4;outline:none;transition:0.2s;"
-            onfocus="this.style.borderColor='var(--sage)'" onblur="this.style.borderColor='#ddd'" />
+      <!-- STEP 1 -->
+      <div id="step1">
+        <div style="font-weight:600;color:var(--forest);margin-bottom:16px;">📅 Trip Details</div>
+        <label class="form-label">
+          <span class="form-label-text">Trip Name</span>
+          <input class="form-input" id="f-name" type="text" placeholder="e.g. Yosemite Family Adventure 2026" />
         </label>
-
-        <label style="display:block;margin-bottom:14px;">
-          <span style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--sage);font-weight:600;display:block;margin-bottom:6px;">Campsite / Location</span>
-          <input id="f-location" type="text" placeholder="e.g. Yosemite Valley Campground"
-            style="width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.9rem;background:#faf8f4;outline:none;transition:0.2s;"
-            onfocus="this.style.borderColor='var(--sage)'" onblur="this.style.borderColor='#ddd'" />
+        <label class="form-label">
+          <span class="form-label-text">Campsite / Location</span>
+          <input class="form-input" id="f-location" type="text" placeholder="e.g. Yosemite Valley Campground" />
         </label>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-          <label>
-            <span style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--sage);font-weight:600;display:block;margin-bottom:6px;">Start Date</span>
-            <input id="f-start" type="date"
-              style="width:100%;padding:11px 12px;border:1.5px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.875rem;background:#faf8f4;outline:none;transition:0.2s;"
-              onfocus="this.style.borderColor='var(--sage)'" onblur="this.style.borderColor='#ddd'" />
+        <div class="form-row">
+          <label class="form-label" style="margin-bottom:0">
+            <span class="form-label-text">Start Date</span>
+            <input class="form-input" id="f-start" type="date" />
           </label>
-          <label>
-            <span style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--sage);font-weight:600;display:block;margin-bottom:6px;">End Date</span>
-            <input id="f-end" type="date"
-              style="width:100%;padding:11px 12px;border:1.5px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.875rem;background:#faf8f4;outline:none;transition:0.2s;"
-              onfocus="this.style.borderColor='var(--sage)'" onblur="this.style.borderColor='#ddd'" />
+          <label class="form-label" style="margin-bottom:0">
+            <span class="form-label-text">End Date</span>
+            <input class="form-input" id="f-end" type="date" />
           </label>
         </div>
-
-        <label style="display:block;margin-bottom:20px;">
-          <span style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--sage);font-weight:600;display:block;margin-bottom:6px;">Camping Mode</span>
-          <select id="f-mode"
-            style="width:100%;padding:12px 14px;border:1.5px solid var(--sage);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.9rem;background:#faf8f4;outline:none;color:var(--text-pri);">
-            <option value="tent">Tent Only</option>
-            <option value="rv">RV Only</option>
-            <option value="both" selected>Both Tent &amp; RV</option>
-            <option value="cabin">Cabin</option>
+        <label class="form-label">
+          <span class="form-label-text">Camping Mode</span>
+          <select class="form-input" id="f-mode" style="cursor:pointer;">
+            <option value="tent">⛺ Tent Only</option>
+            <option value="rv">🚐 RV Only</option>
+            <option value="both" selected>⛺🚐 Both Tent &amp; RV</option>
+            <option value="cabin">🏡 Cabin</option>
           </select>
         </label>
-
-        <div id="form-error-1" style="color:#b33a2a;font-size:0.82rem;margin-bottom:12px;display:none;"></div>
-
-        <div style="display:flex;gap:10px;justify-content:space-between;">
-          <button onclick="closeModal()" style="padding:11px 22px;border-radius:10px;border:1.5px solid #ddd;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;color:var(--text-sec);">Cancel</button>
-          <button onclick="goStep(2)" style="padding:11px 24px;border-radius:10px;border:none;background:var(--moss);color:#fff;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;">Next: Add Families →</button>
+        <div class="form-error" id="err1"></div>
+        <div class="modal-actions">
+          <button class="btn-modal-back" onclick="closeModal()">Cancel</button>
+          <button class="btn-modal-next" onclick="goStep(2)">Next: Add Families →</button>
         </div>
       </div>
 
-      <!-- STEP 2: Families -->
-      <div id="step-2" style="display:none;">
-        <div style="font-weight:600;font-size:1rem;color:var(--forest);margin-bottom:18px;">👨‍👩‍👧 Add Families / Groups</div>
-
-        <div id="families-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
-
-        <div style="display:flex;gap:8px;margin-bottom:20px;">
-          <input id="f-family-input" type="text" placeholder="Family name (e.g. Smith Family)"
-            style="flex:1;padding:10px 14px;border:1.5px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.875rem;background:#faf8f4;outline:none;"
-            onfocus="this.style.borderColor='var(--sage)'" onblur="this.style.borderColor='#ddd'"
-            onkeydown="if(event.key==='Enter'){addFamily()}" />
-          <button onclick="addFamily()" style="padding:10px 16px;border-radius:10px;border:none;background:var(--sage);color:#fff;font-weight:600;cursor:pointer;font-size:1rem;">＋</button>
+      <!-- STEP 2 -->
+      <div id="step2" style="display:none;">
+        <div style="font-weight:600;color:var(--forest);margin-bottom:16px;">👨‍👩‍👧 Add Families / Groups</div>
+        <div id="families-list"></div>
+        <div class="family-add-row">
+          <input class="form-input" id="f-family-input" type="text" placeholder="Family name (e.g. Smith Family)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();addFamily();}" />
+          <button class="btn-add-family" onclick="addFamily()">＋</button>
         </div>
-
-        <div style="display:flex;gap:10px;justify-content:space-between;">
-          <button onclick="goStep(1)" style="padding:11px 22px;border-radius:10px;border:1.5px solid #ddd;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;color:var(--text-sec);">← Back</button>
-          <button onclick="goStep(3)" style="padding:11px 24px;border-radius:10px;border:none;background:var(--moss);color:#fff;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;">Next: Members →</button>
+        <div style="font-size:0.78rem;color:var(--text-sec);margin-bottom:16px;">Press Enter or ＋ to add. You can skip this step.</div>
+        <div class="modal-actions">
+          <button class="btn-modal-back" onclick="goStep(1)">← Back</button>
+          <button class="btn-modal-next" onclick="goStep(3)">Next: Review →</button>
         </div>
       </div>
 
-      <!-- STEP 3: Review & Create -->
-      <div id="step-3" style="display:none;">
-        <div style="font-weight:600;font-size:1rem;color:var(--forest);margin-bottom:18px;">✅ Review &amp; Create</div>
-        <div id="review-content" style="background:#faf8f4;border-radius:12px;padding:16px;margin-bottom:20px;font-size:0.875rem;line-height:1.8;color:var(--text-sec);"></div>
-        <div style="display:flex;gap:10px;justify-content:space-between;">
-          <button onclick="goStep(2)" style="padding:11px 22px;border-radius:10px;border:1.5px solid #ddd;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;color:var(--text-sec);">← Back</button>
-          <button id="btn-create-trip" onclick="createTrip()" style="padding:11px 28px;border-radius:10px;border:none;background:var(--amber);color:#fff;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(212,130,42,0.3);">🏕️ Create Trip</button>
+      <!-- STEP 3 -->
+      <div id="step3" style="display:none;">
+        <div style="font-weight:600;color:var(--forest);margin-bottom:16px;">✅ Review &amp; Create</div>
+        <div class="review-box" id="review-box"></div>
+        <div class="form-error" id="err3"></div>
+        <div class="modal-actions">
+          <button class="btn-modal-back" onclick="goStep(2)">← Back</button>
+          <button class="btn-create" id="btn-create" onclick="createTrip()">🏕️ Create Trip</button>
         </div>
       </div>
-
     </div>
   </div>
 </div>
 
-<style>
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(20px) scale(0.97); }
-  to   { opacity: 1; transform: none; }
-}
-</style>
-
 <script>
-  /* ── FIREBASE CONFIG ── */
   const FIREBASE_CONFIG = {
-    apiKey:            'AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc',
-    authDomain:        'camp-cbf1d.firebaseapp.com',
-    projectId:         'camp-cbf1d',
-    storageBucket:     'camp-cbf1d.firebasestorage.app',
-    messagingSenderId: '879899618290',
-    appId:             '1:879899618290:web:c71c1626e5a5fa0a96596b',
+    apiKey:'AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc',
+    authDomain:'camp-cbf1d.firebaseapp.com',
+    projectId:'camp-cbf1d',
+    storageBucket:'camp-cbf1d.firebasestorage.app',
+    messagingSenderId:'879899618290',
+    appId:'1:879899618290:web:c71c1626e5a5fa0a96596b',
   };
-
   if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
   const auth = firebase.auth();
   const db   = firebase.firestore();
 
-  /* ── AUTH GUARD ── */
   let currentUser = null;
 
+  /* AUTH GUARD */
   auth.onAuthStateChanged(user => {
-    if (!user) {
-      window.location.replace('index.html');
-      return;
-    }
+    if (!user) { window.location.replace('index.html'); return; }
     currentUser = user;
     document.getElementById('auth-guard').style.display = 'none';
-    document.getElementById('topnav').style.display = 'flex';
-    document.getElementById('hero').style.display = 'block';
-    document.getElementById('main-content').style.display = 'block';
-    initUI(user);
-    loadTrips(user);
+    document.getElementById('page-shell').style.display = 'block';
+    setupNav(user);
+    loadTrips(user.uid);
   });
 
-  function initUI(user) {
-    const name = (user.displayName || '').trim() || user.email?.split('@')[0] || 'Explorer';
-    document.getElementById('hero-greeting').textContent = `Hey, ${name.split(' ')[0]} 👋`;
-    document.getElementById('hero-sub').textContent = 'Plan, track, and relive your adventures.';
-
-    // Avatar
+  function setupNav(user) {
+    const name  = (user.displayName || '').trim() || user.email?.split('@')[0] || 'Explorer';
+    const first = name.split(' ')[0];
+    document.getElementById('hero-greeting').textContent = `Hey, ${first} 👋`;
+    document.getElementById('nav-user-name').textContent = first;
     const av = document.getElementById('nav-avatar');
-    av.title = name;
     if (user.photoURL) {
-      av.innerHTML = `<img src="${user.photoURL}" alt="${name}" />`;
+      const img = document.createElement('img');
+      img.src = user.photoURL; img.alt = name; av.appendChild(img);
     } else {
       av.textContent = name.charAt(0).toUpperCase();
     }
-
-    document.getElementById('btn-signout').addEventListener('click', () => {
-      auth.signOut().then(() => window.location.replace('index.html'));
-    });
-
+    document.getElementById('btn-signout').addEventListener('click', () =>
+      auth.signOut().then(() => window.location.replace('index.html'))
+    );
     document.getElementById('btn-new-trip').addEventListener('click', openModal);
   }
 
-  /* ── LOAD TRIPS ── */
-  function loadTrips(user) {
-    db.collection('trips')
-      .where('ownerUID', '==', user.uid)
-      .orderBy('startDate', 'desc')
+  /* LOAD TRIPS — no orderBy, sort client-side to avoid Firestore composite index */
+  function loadTrips(uid) {
+    db.collection('trips').where('ownerUID', '==', uid)
       .onSnapshot(snap => {
         const today = new Date(); today.setHours(0,0,0,0);
+        const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        all.sort((a, b) => (a.startDate||'') < (b.startDate||'') ? 1 : -1);
         const active = [], completed = [];
-        snap.forEach(doc => {
-          const d = { id: doc.id, ...doc.data() };
-          const end = d.endDate ? new Date(d.endDate) : null;
-          if (end && end < today) completed.push(d);
-          else active.push(d);
+        all.forEach(t => {
+          const end = t.endDate ? new Date(t.endDate + 'T23:59:59') : null;
+          (end && end < today ? completed : active).push(t);
         });
-        renderGrid('active-trips-grid', 'active-count', active, false);
-        renderGrid('completed-trips-grid', 'completed-count', completed, true);
-      }, err => {
-        console.error(err);
-      });
+        renderGrid('active-grid',    'active-count',    active,    false);
+        renderGrid('completed-grid', 'completed-count', completed, true);
+      }, err => console.error('[PlanAway] Firestore:', err));
   }
 
-  function modeIcon(m) {
-    return { tent:'⛺', rv:'🚐', both:'⛺🚐', cabin:'🏡' }[m] || '🏕️';
+  /* HELPERS */
+  function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function modeIcon(m){ return {tent:'⛺',rv:'🚐',both:'⛺🚐',cabin:'🏡'}[m]||'🏕️'; }
+  function fmtDate(ds){
+    if(!ds) return '—';
+    return new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }
+  function nightsCount(s,e){
+    if(!s||!e) return '—';
+    return Math.max(0, Math.round((new Date(e)-new Date(s))/86400000));
   }
 
-  function formatDate(ds) {
-    if (!ds) return '—';
-    const d = new Date(ds + 'T12:00:00');
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
-
-  function nightsCount(s, e) {
-    if (!s || !e) return '—';
-    const ms = new Date(e) - new Date(s);
-    return Math.max(0, Math.round(ms / 86400000));
-  }
-
+  /* RENDER GRID */
   function renderGrid(gridId, countId, trips, isCompleted) {
     const grid = document.getElementById(gridId);
-    const countEl = document.getElementById(countId);
-    countEl.textContent = `${trips.length} trip${trips.length !== 1 ? 's' : ''}`;
+    document.getElementById(countId).textContent = `${trips.length} trip${trips.length!==1?'s':''}`;
+    grid.innerHTML = '';
 
     if (!trips.length) {
-      grid.innerHTML = '';
-      const empty = document.createElement('div');
-      empty.className = 'empty-state';
-      empty.style.gridColumn = '1 / -1';
-      empty.innerHTML = `
-        <span class="empty-icon">${isCompleted ? '🏁' : '🗺️'}</span>
-        <div class="empty-title">${isCompleted ? 'No completed trips yet' : 'No trips planned yet'}</div>
-        <div class="empty-sub">${isCompleted ? 'Finished trips will appear here.' : 'Hit "New Trip" to start planning!'}</div>
-      `;
-      grid.appendChild(empty);
+      const el = document.createElement('div');
+      el.className = 'empty-state';
+      el.innerHTML = `
+        <span class="empty-icon">${isCompleted?'🏁':'🗺️'}</span>
+        <div class="empty-title">${isCompleted?'No completed trips yet':'No trips planned yet'}</div>
+        <div class="empty-sub">${isCompleted?'Finished trips will appear here.':'Tap "+ New Trip" to get started!'}</div>`;
+      grid.appendChild(el);
       return;
     }
 
-    grid.innerHTML = '';
     const today = new Date(); today.setHours(0,0,0,0);
-
     trips.forEach((trip, i) => {
-      const start = trip.startDate ? new Date(trip.startDate + 'T12:00:00') : null;
-      const end   = trip.endDate   ? new Date(trip.endDate   + 'T12:00:00') : null;
+      const start = trip.startDate ? new Date(trip.startDate+'T12:00:00') : null;
+      const end   = trip.endDate   ? new Date(trip.endDate  +'T12:00:00') : null;
+      let badgeClass='badge-upcoming', badgeText='Upcoming';
+      if (isCompleted) { badgeClass='badge-completed'; badgeText='Completed'; }
+      else if (start && start<=today && end && end>=today) { badgeClass='badge-active'; badgeText='Active'; }
 
-      let status = 'upcoming', badgeClass = 'badge-upcoming', badgeText = 'Upcoming';
-      if (isCompleted) { status = 'completed'; badgeClass = 'badge-completed'; badgeText = 'Completed'; }
-      else if (start && start <= today && end && end >= today) { badgeClass = 'badge-active'; badgeText = 'Active'; }
+      const families = Array.isArray(trip.families) ? trip.families : [];
+      const chips = families.slice(0,3).map(f=>`<span class="member-chip">${esc(f.name||f)}</span>`).join('')
+        + (families.length>3 ? `<span class="member-chip">+${families.length-3}</span>` : '');
 
-      const families = trip.families || [];
-      const memberChips = families.slice(0, 3).map(f =>
-        `<span class="member-chip">${f.name || f}</span>`
-      ).join('') + (families.length > 3 ? `<span class="member-chip">+${families.length - 3}</span>` : '');
-
-      const nights = nightsCount(trip.startDate, trip.endDate);
       const card = document.createElement('a');
       card.href = `planner.html#${trip.id}`;
-      card.className = `trip-card fade-in ${isCompleted ? 'completed' : ''}`;
-      card.style.animationDelay = `${i * 0.06}s`;
+      card.className = `trip-card fade-in${isCompleted?' completed':''}`;
+      card.style.animationDelay = `${i*0.06}s`;
       card.innerHTML = `
         <div class="trip-card-header">
           <span class="trip-status-badge ${badgeClass}">${badgeText}</span>
           <span class="trip-card-icon">${modeIcon(trip.mode)}</span>
-          <div class="trip-card-name">${escHtml(trip.name || 'Unnamed Trip')}</div>
-          <div class="trip-card-location">📍 ${escHtml(trip.location || 'No location')}</div>
+          <div class="trip-card-name">${esc(trip.name||'Unnamed Trip')}</div>
+          <div class="trip-card-location">📍 ${esc(trip.location||'No location set')}</div>
         </div>
         <div class="trip-card-body">
           <div class="trip-meta">
-            <div class="trip-meta-item">
-              <span class="trip-meta-label">Start</span>
-              <span class="trip-meta-value">${formatDate(trip.startDate)}</span>
-            </div>
-            <div class="trip-meta-item">
-              <span class="trip-meta-label">End</span>
-              <span class="trip-meta-value">${formatDate(trip.endDate)}</span>
-            </div>
-            <div class="trip-meta-item">
-              <span class="trip-meta-label">Nights</span>
-              <span class="trip-meta-value">${nights}</span>
-            </div>
+            <div class="trip-meta-item"><span class="trip-meta-label">Start</span><span class="trip-meta-value">${fmtDate(trip.startDate)}</span></div>
+            <div class="trip-meta-item"><span class="trip-meta-label">End</span><span class="trip-meta-value">${fmtDate(trip.endDate)}</span></div>
+            <div class="trip-meta-item"><span class="trip-meta-label">Nights</span><span class="trip-meta-value">${nightsCount(trip.startDate,trip.endDate)}</span></div>
           </div>
           <div class="trip-card-footer">
-            <div class="trip-members">${memberChips || '<span style="color:#aaa;font-size:0.8rem;">No families added</span>'}</div>
+            <div>${chips||'<span style="color:#aaa;font-size:0.8rem;">No families added</span>'}</div>
             <span class="trip-arrow">→</span>
           </div>
-        </div>
-      `;
+        </div>`;
       grid.appendChild(card);
     });
   }
 
-  function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  /* ── MODAL ── */
-  let families = [];
+  /* MODAL */
+  let modalFamilies = [];
 
   function openModal() {
-    families = [];
-    document.getElementById('f-name').value = '';
-    document.getElementById('f-location').value = '';
+    modalFamilies = [];
+    ['f-name','f-location','f-family-input'].forEach(id => document.getElementById(id).value='');
     document.getElementById('f-start').value = '';
-    document.getElementById('f-end').value = '';
-    document.getElementById('f-mode').value = 'both';
-    document.getElementById('f-family-input').value = '';
+    document.getElementById('f-end').value   = '';
+    document.getElementById('f-mode').value  = 'both';
     renderFamiliesList();
     goStep(1);
-    const ov = document.getElementById('modal-overlay');
-    ov.style.display = 'flex';
+    document.getElementById('modal-overlay').classList.add('open');
     setTimeout(() => document.getElementById('f-name').focus(), 100);
   }
 
   function closeModal() {
-    document.getElementById('modal-overlay').style.display = 'none';
+    document.getElementById('modal-overlay').classList.remove('open');
   }
 
   document.getElementById('modal-overlay').addEventListener('click', e => {
@@ -588,33 +399,31 @@
   });
 
   function goStep(n) {
-    if (n === 2 && !validateStep1()) return;
-    if (n === 3) buildReview();
+    if (n===2 && !validateStep1()) return;
+    if (n===3) buildReview();
     [1,2,3].forEach(i => {
-      document.getElementById(`step-${i}`).style.display = i === n ? 'block' : 'none';
-      document.getElementById(`step-ind-${i}`).style.background = i <= n ? 'var(--moss)' : '#ddd';
+      document.getElementById(`step${i}`).style.display = i===n ? 'block' : 'none';
+      document.getElementById(`sb${i}`).classList.toggle('done', i<=n);
     });
   }
 
   function validateStep1() {
-    const name = document.getElementById('f-name').value.trim();
-    const loc  = document.getElementById('f-location').value.trim();
+    const name  = document.getElementById('f-name').value.trim();
+    const loc   = document.getElementById('f-location').value.trim();
     const start = document.getElementById('f-start').value;
     const end   = document.getElementById('f-end').value;
-    const errEl = document.getElementById('form-error-1');
-
-    if (!name) { errEl.textContent = 'Please enter a trip name.'; errEl.style.display = 'block'; return false; }
-    if (!loc)  { errEl.textContent = 'Please enter a campsite/location.'; errEl.style.display = 'block'; return false; }
-    if (!start) { errEl.textContent = 'Please pick a start date.'; errEl.style.display = 'block'; return false; }
-    if (!end)   { errEl.textContent = 'Please pick an end date.'; errEl.style.display = 'block'; return false; }
-
-    const s = new Date(start), e = new Date(end);
+    const errEl = document.getElementById('err1');
+    const fail  = msg => { errEl.textContent=msg; errEl.classList.add('visible'); return false; };
+    errEl.classList.remove('visible');
+    if (!name)  return fail('Please enter a trip name.');
+    if (!loc)   return fail('Please enter a campsite or location.');
+    if (!start) return fail('Please select a start date.');
+    if (!end)   return fail('Please select an end date.');
     const today = new Date(); today.setHours(0,0,0,0);
-
-    if (s < today) { errEl.textContent = 'Start date cannot be in the past.'; errEl.style.display = 'block'; return false; }
-    if (e <= s)    { errEl.textContent = 'End date must be after start date.'; errEl.style.display = 'block'; return false; }
-
-    errEl.style.display = 'none';
+    const s = new Date(start+'T00:00:00');
+    const e = new Date(end  +'T00:00:00');
+    if (s < today) return fail('Start date cannot be in the past.');
+    if (e <= s)    return fail('End date must be after start date.');
     return true;
   }
 
@@ -622,7 +431,7 @@
     const inp = document.getElementById('f-family-input');
     const val = inp.value.trim();
     if (!val) return;
-    families.push({ name: val, members: [] });
+    modalFamilies.push({ name: val, members: [] });
     inp.value = '';
     renderFamiliesList();
     inp.focus();
@@ -631,63 +440,74 @@
   function renderFamiliesList() {
     const el = document.getElementById('families-list');
     el.innerHTML = '';
-    families.forEach((f, i) => {
+    modalFamilies.forEach((f, i) => {
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:#faf8f4;border:1.5px solid rgba(122,179,138,0.2);border-radius:10px;padding:10px 14px;';
-      row.innerHTML = `
-        <span style="font-weight:500;color:var(--forest);">👨‍👩‍👧 ${escHtml(f.name)}</span>
-        <button onclick="removeFamily(${i})" style="background:none;border:none;color:#c0603a;cursor:pointer;font-size:1rem;padding:0 4px;">✕</button>
-      `;
+      row.className = 'family-row';
+      const span = document.createElement('span');
+      span.style.fontWeight = '500';
+      span.style.color = 'var(--forest)';
+      span.textContent = `👨‍👩‍👧 ${f.name}`;
+      const btn = document.createElement('button');
+      btn.className = 'family-row-remove';
+      btn.textContent = '✕';
+      btn.setAttribute('aria-label', `Remove ${f.name}`);
+      btn.addEventListener('click', () => { modalFamilies.splice(i,1); renderFamiliesList(); });
+      row.appendChild(span);
+      row.appendChild(btn);
       el.appendChild(row);
     });
   }
 
-  function removeFamily(i) {
-    families.splice(i, 1);
-    renderFamiliesList();
-  }
-
   function buildReview() {
+    const modeLabels = {tent:'Tent Only',rv:'RV Only',both:'Both Tent & RV',cabin:'Cabin'};
     const name  = document.getElementById('f-name').value.trim();
     const loc   = document.getElementById('f-location').value.trim();
     const start = document.getElementById('f-start').value;
     const end   = document.getElementById('f-end').value;
     const mode  = document.getElementById('f-mode').value;
-    const nights = nightsCount(start, end);
-    const modeLabels = { tent:'Tent Only', rv:'RV Only', both:'Both Tent & RV', cabin:'Cabin' };
-    document.getElementById('review-content').innerHTML = `
-      <strong>Trip:</strong> ${escHtml(name)}<br/>
-      <strong>Location:</strong> ${escHtml(loc)}<br/>
-      <strong>Dates:</strong> ${formatDate(start)} → ${formatDate(end)} (${nights} nights)<br/>
-      <strong>Mode:</strong> ${modeLabels[mode] || mode}<br/>
-      <strong>Families:</strong> ${families.length ? families.map(f => f.name).join(', ') : 'None added'}
-    `;
+    const box   = document.getElementById('review-box');
+    box.innerHTML = '';
+    [
+      ['Trip',     name],
+      ['Location', loc],
+      ['Dates',    `${fmtDate(start)} → ${fmtDate(end)} (${nightsCount(start,end)} nights)`],
+      ['Mode',     modeLabels[mode]||mode],
+      ['Families', modalFamilies.length ? modalFamilies.map(f=>f.name).join(', ') : 'None — you can add later'],
+    ].forEach(([label, value]) => {
+      const div = document.createElement('div');
+      const b = document.createElement('strong');
+      b.textContent = label + ': ';
+      div.appendChild(b);
+      div.appendChild(document.createTextNode(value));
+      box.appendChild(div);
+    });
   }
 
   async function createTrip() {
-    const btn = document.getElementById('btn-create-trip');
+    const btn   = document.getElementById('btn-create');
+    const errEl = document.getElementById('err3');
     btn.disabled = true; btn.textContent = 'Creating…';
+    errEl.classList.remove('visible');
     try {
-      const name  = document.getElementById('f-name').value.trim();
-      const loc   = document.getElementById('f-location').value.trim();
-      const start = document.getElementById('f-start').value;
-      const end   = document.getElementById('f-end').value;
-      const mode  = document.getElementById('f-mode').value;
-
+      const name     = document.getElementById('f-name').value.trim();
+      const loc      = document.getElementById('f-location').value.trim();
+      const start    = document.getElementById('f-start').value;
+      const end      = document.getElementById('f-end').value;
+      const mode     = document.getElementById('f-mode').value;
       const tripCode = Math.random().toString(36).slice(2,8).toUpperCase();
-      const docRef = await db.collection('trips').add({
-        name, location: loc, startDate: start, endDate: end,
-        mode, families, tripCode,
-        ownerUID: currentUser.uid,
-        ownerEmail: currentUser.email,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      const docRef   = await db.collection('trips').add({
+        name, location:loc, startDate:start, endDate:end,
+        mode, families:modalFamilies, tripCode,
+        ownerUID:currentUser.uid, ownerEmail:currentUser.email,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
       });
       closeModal();
       window.location.href = `planner.html#${docRef.id}`;
     } catch(err) {
-      console.error(err);
+      console.error('[PlanAway] createTrip:', err);
       btn.disabled = false; btn.textContent = '🏕️ Create Trip';
-      alert('Error creating trip. Please try again.');
+      errEl.textContent = 'Failed to create trip. Check your connection and try again.';
+      errEl.classList.add('visible');
     }
   }
 </script>

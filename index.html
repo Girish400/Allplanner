@@ -8,16 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-
-  <!-- Fix #10: Content Security Policy -->
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://securetoken.googleapis.com wss://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https: blob:; frame-src https://camp-cbf1d.firebaseapp.com;" />
-
-  <!-- Firebase SDK — compat build, exposes window.firebase globally -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <style>
-    /* ── DESIGN TOKENS ─────────────────────────────────── */
     :root {
       --forest:   #1a3a2a;
       --moss:     #2e5c3e;
@@ -28,16 +21,12 @@
       --sky:      #4a7fa5;
       --dusk:     #e8ddd0;
       --error:    #b33a2a;
-      --success:  #2a6b3a;
       --text-pri: #1a2518;
       --text-sec: #4a5a44;
       --radius:   14px;
-      --shadow-md: 0 6px 32px rgba(26,58,42,0.13);
       --shadow-lg: 0 16px 60px rgba(26,58,42,0.18);
       --transition: 0.28s cubic-bezier(0.4,0,0.2,1);
     }
-
-    /* ── RESET ──────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 16px; }
     body {
@@ -45,30 +34,18 @@
       background: var(--cream);
       color: var(--text-pri);
       min-height: 100vh;
-      min-height: 100dvh;
       overflow-x: hidden;
     }
 
-    /* ── BACKGROUND SCENERY ─────────────────────────────── */
     .bg-scene {
       position: fixed; inset: 0; z-index: 0; overflow: hidden;
       background: linear-gradient(160deg, #d8eed8 0%, #c5e0d0 30%, #e8ddd0 65%, #f5f0e8 100%);
     }
     .bg-scene::before {
       content: '';
-      position: absolute; bottom: 0; left: 0; right: 0;
-      height: 45%;
+      position: absolute; bottom: 0; left: 0; right: 0; height: 45%;
       background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%231a3a2a' fill-opacity='0.12' d='M0,160L48,144C96,128,192,96,288,106.7C384,117,480,171,576,181.3C672,192,768,160,864,138.7C960,117,1056,107,1152,112C1248,117,1344,139,1392,149.3L1440,160L1440,320L0,320Z'%3E%3C/path%3E%3C%2Fsvg%3E") no-repeat bottom/cover;
     }
-    .bg-scene::after {
-      content: '';
-      position: absolute;
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba(122,179,138,0.22) 0%, transparent 70%);
-      top: -100px; right: -100px;
-      border-radius: 50%;
-    }
-    /* floating icons */
     .floater {
       position: absolute; opacity: 0.07; pointer-events: none;
       animation: drift 18s ease-in-out infinite alternate;
@@ -82,15 +59,13 @@
       to   { transform: translateY(-30px) rotate(4deg); }
     }
 
-    /* ── LAYOUT ─────────────────────────────────────────── */
     #app {
       position: relative; z-index: 1;
-      min-height: 100vh; min-height: 100dvh;
+      min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
       padding: 24px;
     }
 
-    /* ── CARD SHELL ─────────────────────────────────────── */
     .card {
       background: rgba(255,252,246,0.92);
       backdrop-filter: blur(18px);
@@ -106,7 +81,6 @@
       to   { opacity: 1; transform: none; }
     }
 
-    /* ── CARD HEADER ────────────────────────────────────── */
     .card-header {
       background: linear-gradient(135deg, var(--forest) 0%, var(--moss) 100%);
       padding: 36px 40px 32px;
@@ -133,7 +107,6 @@
       font-family: 'Playfair Display', serif;
       font-size: 2rem; font-weight: 700;
       color: var(--cream); letter-spacing: -0.02em;
-      line-height: 1;
     }
     .brand-tagline {
       font-size: 0.78rem; color: rgba(245,240,232,0.65);
@@ -141,10 +114,8 @@
       margin-top: 6px;
     }
 
-    /* ── CARD BODY ──────────────────────────────────────── */
     .card-body { padding: 36px 40px 40px; }
 
-    /* ── VIEWS ──────────────────────────────────────────── */
     .view { display: none; }
     .view.active { display: block; animation: fadeUp 0.35s ease both; }
     @keyframes fadeUp {
@@ -152,7 +123,22 @@
       to   { opacity: 1; transform: none; }
     }
 
-    /* ── LOGIN VIEW ─────────────────────────────────────── */
+    /* LOADING VIEW */
+    #view-loading {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 14px; padding: 20px;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(122,179,138,0.2);
+      border-top-color: var(--moss);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-text { font-size: 0.875rem; color: var(--text-sec); }
+
+    /* LOGIN VIEW */
     #view-login .headline {
       font-family: 'Playfair Display', serif;
       font-size: 1.45rem; font-weight: 700;
@@ -170,71 +156,35 @@
       border: 1px solid rgba(122,179,138,0.3);
       border-radius: 20px; padding: 4px 14px;
       font-size: 0.78rem; color: var(--moss);
-      font-weight: 500; white-space: nowrap;
+      font-weight: 500;
     }
 
-    /* ── BUTTONS ────────────────────────────────────────── */
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
       gap: 10px; cursor: pointer;
       border: none; border-radius: var(--radius);
       font-family: 'DM Sans', sans-serif; font-weight: 500;
-      transition: var(--transition); position: relative;
-      user-select: none; -webkit-user-select: none;
-      white-space: nowrap;
-    }
-    .btn:focus-visible {
-      outline: 3px solid var(--amber); outline-offset: 3px;
+      transition: var(--transition);
+      user-select: none;
     }
     .btn:disabled { opacity: 0.55; cursor: not-allowed; pointer-events: none; }
+    .btn:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
+
     .btn-google {
       width: 100%; padding: 14px 20px;
       background: #fff; color: #3c4043;
       border: 1.5px solid #dadce0;
-      font-size: 0.9375rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      font-size: 0.9375rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     }
     .btn-google:hover:not(:disabled) {
       background: #f8fbff; border-color: var(--sky);
       box-shadow: 0 4px 16px rgba(74,127,165,0.15);
       transform: translateY(-1px);
     }
-    .btn-google:active:not(:disabled) { transform: translateY(0); }
     .google-icon { width: 20px; height: 20px; flex-shrink: 0; }
-    .btn-secondary {
-      padding: 10px 20px; font-size: 0.875rem;
-      background: transparent; color: var(--forest);
-      border: 1.5px solid var(--sage);
-    }
-    .btn-secondary:hover:not(:disabled) {
-      background: rgba(122,179,138,0.12);
-    }
-    .btn-sign-out {
-      padding: 10px 22px; font-size: 0.875rem;
-      background: rgba(192,96,58,0.1); color: var(--ember);
-      border: 1.5px solid rgba(192,96,58,0.25);
-    }
-    .btn-sign-out:hover:not(:disabled) {
-      background: rgba(192,96,58,0.18);
-    }
 
-    /* ── LOADING SPINNER ────────────────────────────────── */
-    .spinner-wrap {
-      display: flex; flex-direction: column;
-      align-items: center; gap: 14px; padding: 16px 0;
-    }
-    .spinner {
-      width: 40px; height: 40px;
-      border: 3px solid rgba(122,179,138,0.2);
-      border-top-color: var(--moss);
-      border-radius: 50%;
-      animation: spin 0.85s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner-text {
-      font-size: 0.875rem; color: var(--text-sec);
-    }
-
-    /* Inline spinner inside the sign-in button (Bug 11 — loading indicator) */
+    /* inline loading spinner on button */
     .btn-spinner {
       width: 16px; height: 16px; flex-shrink: 0;
       border: 2px solid rgba(60,64,67,0.25);
@@ -243,1070 +193,191 @@
       animation: spin 0.75s linear infinite;
       display: none;
     }
-    .btn-google.loading .btn-spinner  { display: block; }
-    .btn-google.loading .google-icon  { display: none; }
-    .btn-google.loading .btn-label    { opacity: 0.6; }
+    .btn-google.loading .btn-spinner { display: block; }
+    .btn-google.loading .google-icon { display: none; }
+    .btn-google.loading .btn-label   { opacity: 0.6; }
 
-    /* ── ERROR / STATUS BOX ─────────────────────────────── */
     .status-box {
       border-radius: 10px; padding: 14px 16px;
       font-size: 0.875rem; line-height: 1.5;
       margin-top: 18px; display: none;
+      border-inline-start: 4px solid transparent;
     }
     .status-box.error {
       background: rgba(179,58,42,0.08);
       border: 1px solid rgba(179,58,42,0.25);
-      color: var(--error);
+      border-inline-start-color: var(--error);
+      color: var(--error); display: block;
     }
     .status-box.info {
       background: rgba(74,127,165,0.08);
       border: 1px solid rgba(74,127,165,0.2);
-      color: var(--sky);
-    }
-    .status-box.visible { display: block; }
-    .status-box .retry-row {
-      margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;
+      border-inline-start-color: var(--sky);
+      color: var(--sky); display: block;
     }
 
-    /* ── DASHBOARD VIEW ─────────────────────────────────── */
-    #view-dashboard .welcome-head {
-      display: flex; align-items: center; gap: 14px; margin-bottom: 24px;
+    .retry-btn {
+      margin-top: 10px; padding: 8px 16px;
+      border-radius: 8px; border: 1.5px solid var(--sage);
+      background: transparent; color: var(--forest);
+      font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+      cursor: pointer;
     }
-    .avatar-wrap { position: relative; flex-shrink: 0; }
-    .avatar {
-      width: 60px; height: 60px; border-radius: 50%;
-      border: 3px solid var(--sage);
-      object-fit: cover; display: block;
-    }
-    .avatar-fallback {
-      width: 60px; height: 60px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--moss), var(--sage));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.5rem; color: #fff; font-weight: 700;
-      flex-shrink: 0; display: none;
-    }
-    .welcome-text .name {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.3rem; font-weight: 700;
-      color: var(--forest); line-height: 1.2;
-    }
-    .welcome-text .email {
-      font-size: 0.8rem; color: var(--text-sec); margin-top: 2px;
-    }
-    .welcome-text .email-label {
-      font-size: 0.72rem; text-transform: uppercase;
-      letter-spacing: 0.08em; color: var(--sage); font-weight: 500;
-    }
+    .retry-btn:hover { background: rgba(122,179,138,0.12); }
 
-    .plan-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 12px; margin-bottom: 24px;
-    }
-    .plan-card {
-      background: linear-gradient(135deg, var(--forest) 0%, var(--moss) 100%);
-      border-radius: 14px; padding: 18px 16px;
-      cursor: pointer; transition: var(--transition);
-      text-decoration: none; display: block;
-      border: 1.5px solid transparent;
-    }
-    .plan-card:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
-      border-color: var(--sage);
-    }
-    .plan-card:focus-visible {
-      outline: 3px solid var(--amber); outline-offset: 2px;
-    }
-    .plan-card .icon { font-size: 1.8rem; display: block; margin-bottom: 8px; }
-    .plan-card .label {
-      font-size: 0.875rem; font-weight: 500;
-      color: var(--cream); opacity: 0.9;
-    }
-    .plan-card:nth-child(2) { background: linear-gradient(135deg, #2a4a6a, var(--sky)); }
-    .plan-card:nth-child(3) { background: linear-gradient(135deg, #5a3a1a, var(--amber)); }
-    .plan-card:nth-child(4) { background: linear-gradient(135deg, #2a5a3a, #4a9a5a); }
-
-    .dash-footer {
-      display: flex; justify-content: flex-end; padding-top: 4px;
-    }
-
-    /* ── SR LIVE REGION ─────────────────────────────────── */
-    .sr-only {
-      position: absolute; width: 1px; height: 1px;
-      padding: 0; margin: -1px; overflow: hidden;
-      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
-    }
-
-    /* ── OFFLINE BANNER ─────────────────────────────────── */
-    #offline-banner {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      background: var(--ember); color: #fff;
-      text-align: center; padding: 10px 20px;
-      font-size: 0.875rem; font-weight: 500;
-      transform: translateY(-100%);
-      transition: transform 0.3s ease;
-    }
-    #offline-banner.visible { transform: translateY(0); }
-
-    /* ── INITIAL LOADER ─────────────────────────────────── */
-    #initial-loader {
-      display: flex; flex-direction: column;
-      align-items: center; gap: 12px; padding: 20px;
-    }
-
-    /* ── RTL SUPPORT ────────────────────────────────────── */
-    [dir="rtl"] .plan-grid { direction: rtl; }
-    [dir="rtl"] .welcome-head { flex-direction: row-reverse; }
-    [dir="rtl"] .welcome-text { text-align: right; }
-    [dir="rtl"] .adventure-chips { flex-direction: row-reverse; }
-    [dir="rtl"] .dash-footer { justify-content: flex-start; }
-    [dir="rtl"] .status-box { text-align: right; }
-    [dir="rtl"] .retry-row { flex-direction: row-reverse; }
-
-    /* border direction fix */
-    .status-box { border-inline-start: 4px solid transparent; }
-    .status-box.error { border-inline-start-color: var(--error); }
-    .status-box.info  { border-inline-start-color: var(--sky); }
-
-    /* ── RESPONSIVE ─────────────────────────────────────── */
     @media (max-width: 480px) {
       .card-header { padding: 28px 28px 24px; }
       .card-body   { padding: 28px 24px 32px; }
-      .plan-grid   { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 360px) {
-      .plan-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
-
 <body>
-  <!-- offline banner -->
-  <div id="offline-banner" role="alert" aria-live="assertive"></div>
 
-  <!-- background -->
-  <div class="bg-scene" aria-hidden="true">
-    <span class="floater">⛺</span>
-    <span class="floater">🚐</span>
-    <span class="floater">🏕️</span>
-    <span class="floater">🧺</span>
-  </div>
+<div class="bg-scene" aria-hidden="true">
+  <span class="floater">⛺</span>
+  <span class="floater">🚐</span>
+  <span class="floater">🏕️</span>
+  <span class="floater">🧺</span>
+</div>
 
-  <!-- sr live region -->
-  <div id="sr-live" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+<main id="app">
+  <div class="card">
+    <div class="card-header" aria-hidden="true">
+      <span class="logo-icon">🏕️</span>
+      <div class="brand-name">PlanAway</div>
+      <div class="brand-tagline">Camp · RV · Trips · Picnics</div>
+    </div>
 
-  <!-- app root -->
-  <main id="app" role="main">
-    <div class="card" role="region" aria-label="PlanAway Application">
+    <div class="card-body">
 
-      <!-- header -->
-      <div class="card-header" aria-hidden="true">
-        <span class="logo-icon">🏕️</span>
-        <div class="brand-name">PlanAway</div>
-        <div class="brand-tagline">Camp · RV · Trips · Picnics</div>
+      <!-- INITIAL LOADING -->
+      <div id="view-loading">
+        <div class="spinner"></div>
+        <span class="spinner-text">Getting things ready…</span>
       </div>
 
-      <!-- body -->
-      <div class="card-body">
+      <!-- LOGIN -->
+      <section id="view-login" class="view">
+        <h1 class="headline">Welcome, Adventurer</h1>
+        <p class="subline">Sign in to plan your next great escape.</p>
 
-        <!-- initial loader -->
-        <div id="initial-loader" aria-label="Checking sign-in status" role="status">
-          <div class="spinner" aria-hidden="true"></div>
-          <span class="spinner-text">Getting things ready…</span>
+        <div class="adventure-chips">
+          <span class="chip">⛺ Camping</span>
+          <span class="chip">🚐 RV Trip</span>
+          <span class="chip">🗺️ Road Trip</span>
+          <span class="chip">🧺 Picnic</span>
         </div>
 
-        <!-- LOGIN VIEW -->
-        <section id="view-login" class="view" aria-labelledby="login-heading">
-          <h1 id="login-heading" class="headline" tabindex="-1">Welcome, Adventurer</h1>
-          <p class="subline">Sign in to plan your next great escape.</p>
+        <button id="btn-signin" class="btn btn-google" type="button" aria-label="Sign in with Google" disabled>
+          <span class="btn-spinner" aria-hidden="true"></span>
+          <svg class="google-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          <span class="btn-label">Sign in with Google</span>
+        </button>
 
-          <div class="adventure-chips" aria-label="Plan types">
-            <span class="chip">⛺ Camping</span>
-            <span class="chip">🚐 RV Trip</span>
-            <span class="chip">🗺️ Road Trip</span>
-            <span class="chip">🧺 Picnic</span>
-          </div>
+        <div id="login-status" style="margin-top:16px;"></div>
+      </section>
 
-          <button
-            id="btn-signin"
-            class="btn btn-google"
-            type="button"
-            aria-label="Sign in with Google"
-            data-i18n-aria="sign_in_aria"
-            disabled
-          >
-            <!-- btn-spinner shown during auth (Bug 11 — loading indicator) -->
-            <span class="btn-spinner" aria-hidden="true"></span>
-            <svg class="google-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            <span class="btn-label">Sign in with Google</span>
-          </button>
+    </div>
+  </div>
+</main>
 
-          <!-- Bug 9 fix: aria-live="polite" — assertive interrupts screen readers too aggressively -->
-          <div id="login-status" class="status-box" role="alert" aria-live="polite" aria-atomic="true">
-            <span id="login-status-msg"></span>
-            <div class="retry-row" id="login-retry-row" style="display:none"></div>
-          </div>
-        </section>
+<script>
+  /* ── FIREBASE ── */
+  const FIREBASE_CONFIG = {
+    apiKey:            'AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc',
+    authDomain:        'camp-cbf1d.firebaseapp.com',
+    projectId:         'camp-cbf1d',
+    storageBucket:     'camp-cbf1d.firebasestorage.app',
+    messagingSenderId: '879899618290',
+    appId:             '1:879899618290:web:c71c1626e5a5fa0a96596b',
+  };
+  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  const auth = firebase.auth();
 
-        <!-- DASHBOARD VIEW -->
-        <section id="view-dashboard" class="view" aria-labelledby="dash-heading">
-          <div class="welcome-head">
-            <div class="avatar-wrap">
-              <img id="user-avatar" class="avatar" src="" alt="" aria-hidden="true" />
-              <div id="user-avatar-fallback" class="avatar-fallback" aria-hidden="true"></div>
-            </div>
-            <div class="welcome-text">
-              <h1 id="dash-heading" class="name" tabindex="-1"></h1>
-              <div class="email-label" id="email-label">Logged in as</div>
-              <div class="email" id="user-email"></div>
-            </div>
-          </div>
+  const loader   = document.getElementById('view-loading');
+  const viewLogin = document.getElementById('view-login');
+  const btnSignin = document.getElementById('btn-signin');
+  const statusEl  = document.getElementById('login-status');
 
-          <nav class="plan-grid" aria-label="Planning categories">
-            <a href="#" class="plan-card" role="button" aria-label="Plan a camping trip">
-              <span class="icon" aria-hidden="true">⛺</span>
-              <span class="label">Camping</span>
-            </a>
-            <a href="#" class="plan-card" role="button" aria-label="Plan an RV trip">
-              <span class="icon" aria-hidden="true">🚐</span>
-              <span class="label">RV Trip</span>
-            </a>
-            <a href="#" class="plan-card" role="button" aria-label="Plan a road trip">
-              <span class="icon" aria-hidden="true">🗺️</span>
-              <span class="label">Road Trip</span>
-            </a>
-            <a href="#" class="plan-card" role="button" aria-label="Plan a picnic">
-              <span class="icon" aria-hidden="true">🧺</span>
-              <span class="label">Picnic</span>
-            </a>
-          </nav>
+  function showStatus(msg, type) {
+    statusEl.className = `status-box ${type}`;
+    statusEl.textContent = msg;
+  }
+  function clearStatus() {
+    statusEl.className = 'status-box';
+    statusEl.textContent = '';
+  }
 
-          <div class="dash-footer">
-            <button
-              id="btn-signout"
-              class="btn btn-sign-out"
-              type="button"
-              aria-label="Sign out of PlanAway"
-            >
-              Sign Out
-            </button>
-          </div>
-
-          <div id="dash-status" class="status-box" role="alert" aria-live="assertive" aria-atomic="true">
-            <span id="dash-status-msg"></span>
-          </div>
-        </section>
-
-      </div><!-- /card-body -->
-    </div><!-- /card -->
-  </main>
-
-  <!-- ════════════════════════════════════════════════════════ -->
-  <!-- APPLICATION SCRIPT                                       -->
-  <!-- ════════════════════════════════════════════════════════ -->
-  <script>
-    /* ─────────────────────────────────────────────────────────
-     * SECTION 0 — HTTPS ENFORCEMENT
-     * ───────────────────────────────────────────────────────── */
-    (function enforceHTTPS() {
-      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-        const httpsURL = 'https://' + location.host + location.pathname + location.search + location.hash;
-        try { location.replace(httpsURL); } catch (_) { /* no-op on local dev */ }
-      }
-    })();
-
-    /* ─────────────────────────────────────────────────────────
-     * FIX #1 — STATE MACHINE
-     * Replaces scattered boolean flags (initRunning, authResolved)
-     * with a single explicit state enum. Every transition goes
-     * through setState() so state is always observable and logged.
-     *
-     * States:
-     *   idle         — before bootstrap runs
-     *   sdk-loading  — waiting for Firebase SDK check
-     *   auth-pending — onAuthStateChanged not yet fired
-     *   redirect-pending — waiting for getRedirectResult
-     *   signing-in   — popup/redirect in progress
-     *   signing-out  — signOut() in progress
-     *   authenticated — user signed in, dashboard visible
-     *   unauthenticated — no user, login view visible
-     *   error        — terminal error, retry available
-     * ───────────────────────────────────────────────────────── */
-    const STATES = Object.freeze({
-      IDLE:              'idle',
-      SDK_LOADING:       'sdk-loading',
-      AUTH_PENDING:      'auth-pending',
-      REDIRECT_PENDING:  'redirect-pending',
-      SIGNING_IN:        'signing-in',
-      SIGNING_OUT:       'signing-out',
-      AUTHENTICATED:     'authenticated',
-      UNAUTHENTICATED:   'unauthenticated',
-      ERROR:             'error',
-    });
-
-    let _appState = STATES.IDLE;
-
-    function setState(next) {
-      console.debug(`[PlanAway] state: ${_appState} → ${next}`);
-      _appState = next;
+  /* ── AUTH STATE: if already signed in, go straight to landingpage ── */
+  auth.onAuthStateChanged(user => {
+    loader.style.display = 'none';
+    if (user) {
+      /* Already authenticated — send to landing page immediately */
+      window.location.replace('landingpage.html');
+      return;
     }
+    /* Not signed in — show login */
+    viewLogin.classList.add('active');
+    btnSignin.disabled = false;
+  });
 
-    function inState(...states) {
-      return states.includes(_appState);
+  /* ── SIGN IN ── */
+  let signingIn = false;
+  btnSignin.addEventListener('click', async () => {
+    if (signingIn || !navigator.onLine) {
+      if (!navigator.onLine) showStatus('You appear to be offline. Please reconnect.', 'error');
+      return;
     }
+    signingIn = true;
+    btnSignin.disabled = true;
+    btnSignin.classList.add('loading');
+    clearStatus();
 
-    /* ─────────────────────────────────────────────────────────
-     * SECTION 1 — INTERNATIONALISATION (i18n)
-     * ───────────────────────────────────────────────────────── */
-    const TRANSLATIONS = {
-      en: {
-        sign_in_aria:        'Sign in with Google',
-        login_heading:       'Welcome, Adventurer',
-        login_subline:       'Sign in to plan your next great escape.',
-        logged_in_as:        'Logged in as',
-        sign_out:            'Sign Out',
-        loading:             'Getting things ready…',
-        offline:             '⚡ You are offline. Please reconnect to sign in.',
-        timeout_error:       'Sign-in is taking too long. Please try again.',
-        cdn_error:           'Could not load required scripts. Check your connection and retry.',
-        popup_blocked:       'Popup was blocked. Please allow popups for this site and try again.',
-        network_error:       'Network error. Check your connection and try again.',
-        credential_conflict: 'This email is linked to a different sign-in method. Try another account.',
-        too_many_requests:   'Too many attempts. Please wait a moment and try again.',
-        auth_error:          'Sign-in failed. Please try again.',
-        logout_error:        'Sign-out failed. Please try again.',
-        retry:               'Retry',
-        signing_in:          'Signing in…',
-        signing_out:         'Signing out…',
-        redirect_hint:       'Completing sign-in…',
-        welcome_back:        (name) => `Welcome back, ${name}!`,
-        signed_out:          'You have been signed out.',
-        returning_user:      (name) => `Signed in as ${name}.`,
-        http_warning:        'You are on an insecure connection.',
-        http_link_text:      'Switch to HTTPS',
-        http_link_href:      () => 'https://' + location.host + location.pathname + location.search + location.hash,
-      },
-      ar: {
-        sign_in_aria:        'تسجيل الدخول بواسطة Google',
-        login_heading:       'مرحباً أيها المغامر',
-        login_subline:       'سجّل دخولك للتخطيط لمغامرتك القادمة.',
-        logged_in_as:        'تم تسجيل الدخول بواسطة',
-        sign_out:            'تسجيل الخروج',
-        loading:             'جارٍ التحضير…',
-        offline:             '⚡ أنت غير متصل. يرجى إعادة الاتصال.',
-        timeout_error:       'استغرق تسجيل الدخول وقتاً طويلاً. حاول مجدداً.',
-        cdn_error:           'تعذّر تحميل البرامج. تحقق من اتصالك وأعد المحاولة.',
-        popup_blocked:       'تم حظر النافذة المنبثقة. يُرجى السماح بها لهذا الموقع وإعادة المحاولة.',
-        network_error:       'خطأ في الشبكة. تحقق من اتصالك وأعد المحاولة.',
-        credential_conflict: 'هذا البريد الإلكتروني مرتبط بطريقة تسجيل دخول مختلفة. جرّب حساباً آخر.',
-        too_many_requests:   'محاولات كثيرة جداً. الرجاء الانتظار والمحاولة مجدداً.',
-        auth_error:          'فشل تسجيل الدخول. يُرجى المحاولة مرة أخرى.',
-        logout_error:        'فشل تسجيل الخروج. يُرجى المحاولة مرة أخرى.',
-        retry:               'إعادة المحاولة',
-        signing_in:          'جارٍ تسجيل الدخول…',
-        signing_out:         'جارٍ تسجيل الخروج…',
-        redirect_hint:       'جارٍ إتمام تسجيل الدخول…',
-        welcome_back:        (name) => `مرحباً بعودتك، ${name}!`,
-        signed_out:          'تم تسجيل خروجك.',
-        returning_user:      (name) => `أنت مسجّل الدخول باسم ${name}.`,
-        http_warning:        'أنت على اتصال غير آمن.',
-        http_link_text:      'التبديل إلى HTTPS',
-        http_link_href:      () => 'https://' + location.host + location.pathname + location.search + location.hash,
-      },
-      he: {
-        sign_in_aria:        'התחבר עם Google',
-        login_heading:       'ברוך הבא, הרפתקן',
-        login_subline:       'התחבר כדי לתכנן את ההרפתקה הבאה שלך.',
-        logged_in_as:        'מחובר בתור',
-        sign_out:            'התנתק',
-        loading:             'טוען…',
-        offline:             '⚡ אין חיבור לאינטרנט.',
-        timeout_error:       'ההתחברות נמשכת זמן רב מדי. נסה שוב.',
-        cdn_error:           'לא ניתן לטעון סקריפטים. בדוק את החיבור.',
-        popup_blocked:       'החלון הנקפץ נחסם. אפשר חלונות נקפצים לאתר זה ונסה שוב.',
-        network_error:       'שגיאת רשת. בדוק את החיבור ונסה שוב.',
-        credential_conflict: 'כתובת האימייל הזו כבר מקושרת לשיטת כניסה אחרת. נסה חשבון אחר.',
-        too_many_requests:   'יותר מדי ניסיונות. המתן רגע ונסה שוב.',
-        auth_error:          'ההתחברות נכשלה. נסה שוב.',
-        logout_error:        'ההתנתקות נכשלה. נסה שוב.',
-        retry:               'נסה שוב',
-        signing_in:          'מתחבר…',
-        signing_out:         'מתנתק…',
-        redirect_hint:       'משלים כניסה…',
-        welcome_back:        (name) => `ברוך שובך, ${name}!`,
-        signed_out:          'התנתקת בהצלחה.',
-        returning_user:      (name) => `מחובר כ-${name}.`,
-        http_warning:        'אתה על חיבור לא מאובטח.',
-        http_link_text:      'עבור ל-HTTPS',
-        http_link_href:      () => 'https://' + location.host + location.pathname + location.search + location.hash,
-      },
-      fa: {
-        sign_in_aria:        'ورود با Google',
-        login_heading:       'خوش آمدید، ماجراجو',
-        login_subline:       'برای برنامه‌ریزی ماجراجویی بعدی وارد شوید.',
-        logged_in_as:        'وارد شده به عنوان',
-        sign_out:            'خروج',
-        loading:             'در حال آماده‌سازی…',
-        offline:             '⚡ اتصال اینترنت ندارید.',
-        timeout_error:       'ورود خیلی طول کشید. دوباره امتحان کنید.',
-        cdn_error:           'بارگیری اسکریپت‌ها ناموفق بود.',
-        popup_blocked:       'پاپ‌آپ مسدود شد. لطفاً برای این سایت اجازه دهید و دوباره امتحان کنید.',
-        network_error:       'خطای شبکه. اتصال خود را بررسی کنید و دوباره امتحان کنید.',
-        credential_conflict: 'این ایمیل با روش ورود دیگری مرتبط است. حساب دیگری امتحان کنید.',
-        too_many_requests:   'تلاش‌های زیادی انجام شد. لحظه‌ای صبر کنید و دوباره امتحان کنید.',
-        auth_error:          'ورود ناموفق بود. دوباره امتحان کنید.',
-        logout_error:        'خروج ناموفق بود. دوباره امتحان کنید.',
-        retry:               'تلاش مجدد',
-        signing_in:          'در حال ورود…',
-        signing_out:         'در حال خروج…',
-        redirect_hint:       'در حال تکمیل ورود…',
-        welcome_back:        (name) => `خوش برگشتی، ${name}!`,
-        signed_out:          'خارج شدید.',
-        returning_user:      (name) => `وارد شده به عنوان ${name}.`,
-        http_warning:        'اتصال ناامن.',
-        http_link_text:      'رفتن به HTTPS',
-        http_link_href:      () => 'https://' + location.host + location.pathname + location.search + location.hash,
-      },
-      ur: {
-        sign_in_aria:        'Google سے سائن ان کریں',
-        login_heading:       'خوش آمدید، مہم جو',
-        login_subline:       'اگلی مہم کی منصوبہ بندی کے لیے سائن ان کریں۔',
-        logged_in_as:        'لاگ ان بطور',
-        sign_out:            'سائن آؤٹ',
-        loading:             'تیاری جاری ہے…',
-        offline:             '⚡ آپ آف لائن ہیں۔',
-        timeout_error:       'سائن ان میں بہت وقت لگ رہا ہے۔ دوبارہ کوشش کریں۔',
-        cdn_error:           'اسکرپٹ لوڈ نہیں ہو سکے۔',
-        popup_blocked:       'پاپ اپ بلاک ہو گیا۔ اس سائٹ کے لیے اجازت دیں اور دوبارہ کوشش کریں۔',
-        network_error:       'نیٹ ورک خرابی۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔',
-        credential_conflict: 'یہ ای میل کسی اور سائن ان طریقے سے منسلک ہے۔ دوسرا اکاؤنٹ آزمائیں۔',
-        too_many_requests:   'بہت زیادہ کوششیں ہوئیں۔ تھوڑی دیر انتظار کریں اور دوبارہ کوشش کریں۔',
-        auth_error:          'سائن ان ناکام ہوا۔ دوبارہ کوشش کریں۔',
-        logout_error:        'سائن آؤٹ ناکام ہوا۔ دوبارہ کوشش کریں۔',
-        retry:               'دوبارہ کوشش',
-        signing_in:          'سائن ان ہو رہا ہے…',
-        signing_out:         'سائن آؤٹ ہو رہا ہے…',
-        redirect_hint:       'سائن ان مکمل ہو رہا ہے…',
-        welcome_back:        (name) => `خوش آمدید واپس، ${name}!`,
-        signed_out:          'آپ سائن آؤٹ ہو گئے۔',
-        returning_user:      (name) => `${name} کے طور پر لاگ ان ہیں۔`,
-        http_warning:        'غیر محفوظ کنیکشن۔',
-        http_link_text:      'HTTPS پر جائیں',
-        http_link_href:      () => 'https://' + location.host + location.pathname + location.search + location.hash,
-      },
-    };
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
 
-    // RTL language codes (full list — all 9)
-    const RTL_LANGS = new Set(['ar','he','fa','ur','yi','dv','ps','sd','ckb']);
+    try {
+      await auth.signInWithPopup(provider);
+      /* onAuthStateChanged fires → user found → redirect to landingpage */
+    } catch (err) {
+      signingIn = false;
+      btnSignin.disabled = false;
+      btnSignin.classList.remove('loading');
 
-    /**
-     * Detect browser language. Returns base code and full BCP-47 tag.
-     */
-    function detectLang() {
-      const full = navigator.language || navigator.languages?.[0] || 'en';
-      const base = full.split('-')[0].toLowerCase();
-      return { full, base };
-    }
+      if (err.code === 'auth/popup-closed-by-user' ||
+          err.code === 'auth/cancelled-popup-request') return;
 
-    let t = TRANSLATIONS.en;
-    let langFull = 'en';
-
-    function applyTranslations(base, full) {
-      // Resolve fallback FIRST, then set document.lang
-      const resolved = TRANSLATIONS[base] ? base : 'en';
-      t = TRANSLATIONS[resolved];
-      langFull = TRANSLATIONS[base] ? full : 'en';
-      document.documentElement.lang = langFull;
-      // Fix Bug 6: RTL for all 9 RTL langs (not just Arabic)
-      document.documentElement.dir = RTL_LANGS.has(base) ? 'rtl' : 'ltr';
-      // Apply static translated strings
-      safeSetText('login-heading', t.login_heading);
-      const subline = document.querySelector('#view-login .subline');
-      if (subline) subline.textContent = t.login_subline;
-      safeSetText('email-label', t.logged_in_as);     // Fix Bug 11
-      const btnSignin = document.getElementById('btn-signin');
-      if (btnSignin) {
-        // Bug 2 fix: capture SVG BEFORE wiping textContent.
-        // Also preserve the .btn-spinner span; only replace the .btn-label text.
-        const labelEl = btnSignin.querySelector('.btn-label');
-        if (labelEl) {
-          labelEl.textContent = t.sign_in_aria;
-        }
-        btnSignin.setAttribute('aria-label', t.sign_in_aria);
-      }
-      const btnSignout = document.getElementById('btn-signout');
-      if (btnSignout) btnSignout.textContent = t.sign_out;
-    }
-
-    /* ─────────────────────────────────────────────────────────
-     * SECTION 2 — DOM HELPERS (NO innerHTML)
-     * Fix: Bug 1 — all user content set via textContent / DOM API
-     * ───────────────────────────────────────────────────────── */
-    function safeSetText(id, text) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = text ?? '';
-    }
-
-    /**
-     * DOM extraction with graceful per-element failure.
-     * Fix Bug 8: missing DOM element does NOT crash the app;
-     * returns an object where missing elements are null, caller decides.
-     */
-    function extractDOM() {
-      const ids = [
-        'initial-loader','view-login','view-dashboard',
-        'btn-signin','btn-signout',
-        'login-status','login-status-msg','login-retry-row',
-        'dash-status','dash-status-msg',
-        'user-avatar','user-avatar-fallback',
-        'user-email','dash-heading',
-        'offline-banner','sr-live',
-      ];
-      const dom = {};
-      const missing = [];
-      for (const id of ids) {
-        const el = document.getElementById(id);
-        dom[id] = el;
-        if (!el) missing.push(id);
-      }
-      if (missing.length) {
-        console.warn('[PlanAway] Missing DOM elements:', missing);
-        // Non-fatal: continue with partial DOM
-      }
-      return dom;
-    }
-
-    /* Announce to screen readers — Fix Bug 4 */
-    function announce(msg) {
-      const el = document.getElementById('sr-live');
-      if (!el) return;
-      // Force re-announcement by briefly clearing
-      el.textContent = '';
-      requestAnimationFrame(() => { el.textContent = msg; });
-    }
-
-    /**
-     * Put the sign-in button into a loading state (Bug 11).
-     * Shows the inline spinner, dims the label, disables the button.
-     */
-    function setButtonLoading(btn, loadingText) {
-      if (!btn) return;
-      btn.disabled = true;
-      btn.classList.add('loading');
-      btn.setAttribute('aria-label', loadingText);
-    }
-
-    /**
-     * Restore the sign-in button to its normal state.
-     */
-    function resetButtonLoading(btn, normalText) {
-      if (!btn) return;
-      btn.disabled = false;
-      btn.classList.remove('loading');
-      btn.setAttribute('aria-label', normalText);
-    }
-
-    /**
-     * Bug 10 — debounce rapid showStatus calls so the user has time to read.
-     * We track the last message; if the same message arrives within 400 ms
-     * of a clear, we let it through immediately, but we never overwrite a
-     * visible error within 800 ms of it appearing.
-     */
-    let _lastStatusTime = 0;
-    let _lastStatusMsg  = '';
-    const STATUS_MIN_VISIBLE_MS = 800;
-
-    function showStatusDebounced(dom, area, msg, type, showRetry) {
-      const now = Date.now();
-      const sameMsg = msg === _lastStatusMsg;
-      const tooSoon = (now - _lastStatusTime) < STATUS_MIN_VISIBLE_MS && !sameMsg && _lastStatusMsg !== '';
-      if (tooSoon) {
-        // Schedule the new message to appear after the minimum display window
-        setTimeout(() => showStatus(dom, area, msg, type, showRetry), STATUS_MIN_VISIBLE_MS - (now - _lastStatusTime));
-        return;
-      }
-      _lastStatusTime = now;
-      _lastStatusMsg  = msg;
-      showStatus(dom, area, msg, type, showRetry);
-    }
-
-    function clearStatusAndDebounce(dom, area) {
-      _lastStatusMsg  = '';
-      _lastStatusTime = 0;
-      clearStatus(dom, area);
-    }
-
-    /* Show / hide view sections — no innerHTML */
-    function showView(dom, viewId) {
-      ['view-login','view-dashboard'].forEach(id => {
-        const el = dom[id];
-        if (!el) return;
-        el.classList.toggle('active', el.id === viewId);
-      });
-    }
-
-    /* Show status box (error / info) — textContent only, no innerHTML */
-    function showStatus(dom, area, msg, type = 'error', showRetry = false) {
-      // area: 'login' | 'dash'
-      const box  = dom[`${area}-status`];
-      const msgEl = dom[`${area}-status-msg`];
-      if (!box || !msgEl) return;
-      msgEl.textContent = msg;
-      box.className = `status-box ${type} visible`;
-      // Fix Bug 1: HTTPS link built with DOM API — no innerHTML
-      if (area === 'login') {
-        const retryRow = dom['login-retry-row'];
-        if (retryRow) retryRow.style.display = showRetry ? 'flex' : 'none';
-      }
-    }
-
-    function clearStatus(dom, area) {
-      const box  = dom[`${area}-status`];
-      const msgEl = dom[`${area}-status-msg`];
-      if (!box || !msgEl) return;
-      msgEl.textContent = '';
-      box.className = 'status-box';
-      if (area === 'login') {
-        const retryRow = dom['login-retry-row'];
-        if (retryRow) retryRow.style.display = 'none';
-      }
-    }
-
-    /* Build HTTPS warning message with a real <a> element (no innerHTML) */
-    function buildHTTPSMessage(dom) {
-      const msgEl = dom['login-status-msg'];
-      const box   = dom['login-status'];
-      if (!msgEl || !box) return;
-      msgEl.textContent = '';
-      const text = document.createTextNode(t.http_warning + ' ');
-      const link = document.createElement('a');
-      link.href = t.http_link_href();
-      link.textContent = t.http_link_text;
-      link.style.cssText = 'color:inherit;font-weight:600;text-decoration:underline';
-      // Fix Bug 2: use anchor click navigation, not protocol assignment
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = t.http_link_href();
-      });
-      msgEl.appendChild(text);
-      msgEl.appendChild(link);
-      box.className = 'status-box info visible';
-    }
-
-    /* ─────────────────────────────────────────────────────────
-     * SECTION 3 — OFFLINE DETECTION
-     * ───────────────────────────────────────────────────────── */
-    function updateOfflineBanner(dom, isOffline) {
-      const banner = dom['offline-banner'];
-      if (!banner) return;
-      if (isOffline) {
-        banner.textContent = t.offline;
-        banner.classList.add('visible');
-      } else {
-        banner.classList.remove('visible');
-        banner.textContent = '';
-      }
-    }
-
-    /* ─────────────────────────────────────────────────────────
-     * SECTION 4 — RETRY BUTTON MANAGEMENT
-     * Fix Bug 10: retry button listener NEVER stacks.
-     * We use a single AbortController per retry button lifecycle.
-     * ───────────────────────────────────────────────────────── */
-    let retryButtonController = null;
-
-    function mountRetryButton(dom, onRetry) {
-      const retryRow = dom['login-retry-row'];
-      if (!retryRow) return;
-      // Abort any previous retry listener
-      if (retryButtonController) { retryButtonController.abort(); retryButtonController = null; }
-      // Clear old buttons
-      retryRow.textContent = '';
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn btn-secondary';
-      btn.textContent = t.retry;
-      btn.setAttribute('aria-describedby', 'login-status-msg');
-      retryButtonController = new AbortController();
-      btn.addEventListener('click', onRetry, { signal: retryButtonController.signal });
-      retryRow.appendChild(btn);
-      retryRow.style.display = 'flex';
-      btn.focus();
-    }
-
-    function teardownRetryButton() {
-      if (retryButtonController) { retryButtonController.abort(); retryButtonController = null; }
-    }
-
-    /* ─────────────────────────────────────────────────────────
-     * SECTION 5 — FIREBASE CONFIG
-     * ───────────────────────────────────────────────────────── */
-    const FIREBASE_CONFIG = {
-      apiKey:            'AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc',
-      authDomain:        'camp-cbf1d.firebaseapp.com',
-      projectId:         'camp-cbf1d',
-      storageBucket:     'camp-cbf1d.firebasestorage.app',
-      messagingSenderId: '879899618290',
-      appId:             '1:879899618290:web:c71c1626e5a5fa0a96596b',
-      measurementId:     'G-9R2C1174BG',
-    };
-
-    const AUTH_TIMEOUT_MS = 10000;
-
-    /** Returns a Promise that rejects after ms — used with Promise.race() */
-    function rejectAfter(ms) {
-      return new Promise((_, reject) =>
-        setTimeout(() => reject({ code: 'TIMEOUT' }), ms)
-      );
-    }
-
-    /**
-     * FIX #3 — Centralised error-code → translated message mapping.
-     * Covers every known Firebase auth error code explicitly.
-     */
-    function authErrorMessage(code) {
-      switch (code) {
-        case 'auth/popup-blocked':
-          return t.popup_blocked;
-        case 'auth/network-request-failed':
-          return t.network_error;
-        case 'auth/account-exists-with-different-credential':
-          return t.credential_conflict;
-        case 'auth/too-many-requests':
-          return t.too_many_requests;
-        case 'auth/user-disabled':
-          return t.auth_error;   // account disabled — generic is fine
-        case 'auth/operation-not-allowed':
-          return t.auth_error;
-        default:
-          return t.auth_error;
-      }
-    }
-
-    /* ─────────────────────────────────────────────────────────
-     * SECTION 6 — APPLICATION BOOTSTRAP
-     * ───────────────────────────────────────────────────────── */
-    async function bootstrap() {
-      setState(STATES.SDK_LOADING);
-
-      /* 0. Language */
-      const { full, base } = detectLang();
-      applyTranslations(base, full);
-
-      /* 1. DOM */
-      const dom = extractDOM();
-
-      /* 2. Global offline banner (non-auth-layer) */
-      const checkOffline = () => updateOfflineBanner(dom, !navigator.onLine);
-      window.addEventListener('online',  checkOffline);
-      window.addEventListener('offline', checkOffline);
-      checkOffline();
-
-      /* 3. HTTPS gate */
-      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-        if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
-        showView(dom, 'view-login');
-        buildHTTPSMessage(dom);
-        setState(STATES.ERROR);
-        return;
-      }
-
-      /* 4. SDK presence check (Promise.race — proper async rejection) */
-      try {
-        await Promise.race([
-          new Promise((resolve, reject) => {
-            typeof firebase !== 'undefined' && firebase.app ? resolve() : reject({ code: 'CDN_MISSING' });
-          }),
-          rejectAfter(AUTH_TIMEOUT_MS),
-        ]);
-      } catch (err) {
-        if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
-        showView(dom, 'view-login');
-        const msg = err.code === 'TIMEOUT' ? t.timeout_error : t.cdn_error;
-        showStatusDebounced(dom, 'login', msg, 'error', true);
-        mountRetryButton(dom, () => { teardownRetryButton(); clearStatusAndDebounce(dom, 'login'); window.location.reload(); });
-        announce(msg);
-        setState(STATES.ERROR);
-        return;
-      }
-
-      /* 5. Init Firebase (re-init guard) */
-      try {
-        if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-      } catch (err) {
-        console.error('[PlanAway] Firebase init error:', err);
-      }
-
-      /* 6. Auth + persistence */
-      const auth = firebase.auth();
-      try {
-        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-      } catch (err) {
-        console.warn('[PlanAway] setPersistence failed (non-fatal):', err);
-      }
-
-      /* 7. Boot auth layer */
-      bootAuth({ dom, auth });
-    }
-
-    /* ─────────────────────────────────────────────────────────
-     * AUTH LAYER
-     * ───────────────────────────────────────────────────────── */
-    const TEARDOWN_KEY = Symbol.for('__planaway_teardown__');
-
-    function bootAuth({ dom, auth }) {
-      const ac = new AbortController();
-      const { signal } = ac;
-
-      let authUnsubscribe  = null;
-      let authTimeoutId    = null;
-      let signoutInProgress = false;
-
-      /* FIX #4 — Run ID: every sign-in attempt gets a unique ID.
-       * Any async result from a previous attempt is silently dropped. */
-      let _runId = 0;
-      function nextRunId() { return ++_runId; }
-      function isCurrentRun(id) { return id === _runId; }
-
-      /* ── Teardown (FIX #5 — clears ALL async work before retry) ── */
-      function teardown() {
-        ac.abort();
-        if (authUnsubscribe) { authUnsubscribe(); authUnsubscribe = null; }
-        if (authTimeoutId)   { clearTimeout(authTimeoutId); authTimeoutId = null; }
-        teardownRetryButton();
-        delete window[TEARDOWN_KEY];
-      }
-
-      window[TEARDOWN_KEY] = teardown;
-      try {
-        Object.defineProperty(window, 'teardownPlanAway', { value: teardown, writable: false, configurable: false });
-      } catch (_) { /* hot-reload: already defined */ }
-
-      /* ── Auth init timeout ── */
-      authTimeoutId = setTimeout(() => {
-        if (!inState(STATES.AUTHENTICATED, STATES.UNAUTHENTICATED)) {
-          if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
-          showView(dom, 'view-login');
-          resetButtonLoading(dom['btn-signin'], t.sign_in_aria);
-          showStatusDebounced(dom, 'login', t.timeout_error, 'error', true);
-          mountRetryButton(dom, () => { teardownRetryButton(); clearStatusAndDebounce(dom, 'login'); window.location.reload(); });
-          announce(t.timeout_error);
-          setState(STATES.ERROR);
-        }
-      }, AUTH_TIMEOUT_MS);
-
-      /* ── FIX #2 — Redirect fallback: check for pending redirect result on load.
-       * If the user was sent through signInWithRedirect (popup fallback),
-       * getRedirectResult() delivers the credential here on next page load. ── */
-      setState(STATES.REDIRECT_PENDING);
-      (async () => {
+      /* Popup blocked — fall back to redirect */
+      if (err.code === 'auth/popup-blocked') {
+        showStatus('Popup was blocked. Redirecting to sign-in…', 'info');
         try {
-          const result = await auth.getRedirectResult();
-          if (result && result.user) {
-            /* Redirect sign-in succeeded — onAuthStateChanged will fire normally */
-            console.debug('[PlanAway] redirect sign-in completed:', result.user.email);
-          }
-        } catch (err) {
-          /* Redirect errors are non-fatal if user hasn't attempted redirect yet */
-          if (err.code && err.code !== 'auth/no-auth-event') {
-            console.warn('[PlanAway] getRedirectResult error:', err.code);
-          }
+          await auth.signInWithRedirect(provider);
+        } catch (e) {
+          showStatus('Sign-in failed. Please try again.', 'error');
         }
-      })();
-
-      /* ── FIX #8 (focus) + FIX #9 (reactive offline) ── */
-      setState(STATES.AUTH_PENDING);
-      if (dom['btn-signin']) dom['btn-signin'].disabled = true;
-
-      function syncOnlineState() {
-        const btn = dom['btn-signin'];
-        if (!btn || inState(STATES.SIGNING_IN) || !inState(STATES.UNAUTHENTICATED)) return;
-        btn.disabled = !navigator.onLine;
-        updateOfflineBanner(dom, !navigator.onLine);
-      }
-      window.addEventListener('online',  syncOnlineState, { signal });
-      window.addEventListener('offline', syncOnlineState, { signal });
-
-      /* ── onAuthStateChanged ── */
-      authUnsubscribe = auth.onAuthStateChanged((user) => {
-        clearTimeout(authTimeoutId);
-        if (dom['initial-loader']) dom['initial-loader'].style.display = 'none';
-
-        if (user) {
-          setState(STATES.AUTHENTICATED);
-          const wasSigningIn = inState(STATES.SIGNING_IN);  // captured before state change
-          renderDashboard(dom, user, !wasSigningIn);
-          showView(dom, 'view-dashboard');
-          const displayName = (user.displayName || '').trim() || user.email || 'User';
-          announce(wasSigningIn ? t.welcome_back(displayName) : t.returning_user(displayName));
-          requestAnimationFrame(() => { const h = dom['dash-heading']; if (h) h.focus(); });
-        } else {
-          setState(STATES.UNAUTHENTICATED);
-          _runId++;                                      // invalidate any in-flight sign-in
-          resetButtonLoading(dom['btn-signin'], t.sign_in_aria);
-          if (dom['btn-signin']) dom['btn-signin'].disabled = !navigator.onLine;
-          showView(dom, 'view-login');
-          requestAnimationFrame(() => { const h = document.getElementById('login-heading'); if (h) h.focus(); });
-        }
-      });
-
-      /* ── SIGN IN ── */
-      const btnSignin = dom['btn-signin'];
-      if (btnSignin) {
-        btnSignin.addEventListener('click', async () => {
-          if (!navigator.onLine) {
-            showStatusDebounced(dom, 'login', t.offline, 'info');
-            announce(t.offline);
-            return;
-          }
-          if (inState(STATES.SIGNING_IN)) return;
-          setState(STATES.SIGNING_IN);
-
-          /* FIX #4 — capture run ID before any await */
-          const myRun = nextRunId();
-
-          setButtonLoading(btnSignin, t.signing_in);
-          clearStatusAndDebounce(dom, 'login');
-          announce(t.signing_in);
-
-          const provider = new firebase.auth.GoogleAuthProvider();
-          provider.setCustomParameters({ prompt: 'select_account' });
-
-          try {
-            await auth.signInWithPopup(provider);
-            /* onAuthStateChanged handles the rest.
-             * If a stale run resolves here after a retry, isCurrentRun check below
-             * in the catch path protects us. Success path: state moves to AUTHENTICATED. */
-          } catch (err) {
-            /* FIX #4 — drop results from cancelled runs */
-            if (!isCurrentRun(myRun)) return;
-
-            setState(STATES.UNAUTHENTICATED);
-            resetButtonLoading(btnSignin, t.sign_in_aria);
-            btnSignin.disabled = !navigator.onLine;
-
-            /* Silent dismissals — user closed or superseded popup */
-            if (err.code === 'auth/popup-closed-by-user' ||
-                err.code === 'auth/cancelled-popup-request') return;
-
-            /* FIX #2 — Popup blocked: fall back to redirect */
-            if (err.code === 'auth/popup-blocked') {
-              setState(STATES.REDIRECT_PENDING);
-              showStatusDebounced(dom, 'login', t.popup_blocked, 'info', false);
-              announce(t.popup_blocked);
-              try {
-                await auth.signInWithRedirect(provider);
-                /* Page will reload; getRedirectResult() handles result on return */
-              } catch (redirectErr) {
-                setState(STATES.UNAUTHENTICATED);
-                const msg = authErrorMessage(redirectErr.code);
-                showStatusDebounced(dom, 'login', msg, 'error', true);
-                mountRetryButton(dom, () => {
-                  teardownRetryButton();
-                  clearStatusAndDebounce(dom, 'login');
-                  resetButtonLoading(btnSignin, t.sign_in_aria);
-                  btnSignin.disabled = !navigator.onLine;
-                  btnSignin.focus();
-                });
-                announce(msg);
-              }
-              return;
-            }
-
-            /* FIX #3 + FIX #11 — all other error codes mapped explicitly */
-            const msg = authErrorMessage(err.code);
-            showStatusDebounced(dom, 'login', msg, 'error', true);
-            mountRetryButton(dom, () => {
-              /* FIX #5 — full state reset: no ghost listeners, no stale run */
-              teardownRetryButton();
-              clearStatusAndDebounce(dom, 'login');
-              resetButtonLoading(btnSignin, t.sign_in_aria);
-              btnSignin.disabled = !navigator.onLine;
-              btnSignin.focus();
-            });
-            announce(msg);
-          }
-        }, { signal });
+        return;
       }
 
-      /* ── SIGN OUT ── */
-      const btnSignout = dom['btn-signout'];
-      if (btnSignout) {
-        btnSignout.addEventListener('click', async () => {
-          if (signoutInProgress) return;
-          signoutInProgress = true;
-          btnSignout.disabled = true;
-          setState(STATES.SIGNING_OUT);
-          clearStatusAndDebounce(dom, 'dash');
-          announce(t.signing_out);
-          try {
-            await auth.signOut();
-            signoutInProgress = false;
-            /* onAuthStateChanged fires → state → UNAUTHENTICATED */
-          } catch (err) {
-            signoutInProgress = false;
-            btnSignout.disabled = false;
-            setState(STATES.AUTHENTICATED);
-            showStatusDebounced(dom, 'dash', t.logout_error, 'error');
-            announce(t.logout_error);
-          }
-        }, { signal });
-      }
-
-      window.addEventListener('beforeunload', teardown, { signal });
+      const msgs = {
+        'auth/network-request-failed': 'Network error. Check your connection.',
+        'auth/too-many-requests':       'Too many attempts. Please wait and try again.',
+        'auth/account-exists-with-different-credential': 'This email uses a different sign-in method.',
+      };
+      showStatus(msgs[err.code] || 'Sign-in failed. Please try again.', 'error');
     }
+  });
 
-    /* ─────────────────────────────────────────────────────────
-     * RENDER DASHBOARD — No innerHTML, safe photo handling
-     * ───────────────────────────────────────────────────────── */
-    function renderDashboard(dom, user, isReturn) {
-      const rawName  = (user.displayName || '').trim();
-      const safeName = rawName || user.email?.split('@')[0] || 'User';
-
-      // Welcome text — isReturn = user was already signed in on page load
-      safeSetText('dash-heading', isReturn ? t.returning_user(safeName) : t.welcome_back(safeName));
-      safeSetText('user-email', user.email || '');
-      safeSetText('email-label', t.logged_in_as);   // Fix Bug 11
-
-      // Avatar — Bug 7 fix: always reset both elements first to prevent stale image flicker
-      const img      = dom['user-avatar'];
-      const fallback = dom['user-avatar-fallback'];
-      if (img && fallback) {
-        // Reset unconditionally on every render
-        img.style.display = 'none';
-        img.src = '';
-        img.onerror = null;
-        fallback.style.display = 'none';
-        fallback.textContent = '';
-
-        if (user.photoURL) {
-          img.src = user.photoURL;
-          img.alt = safeName;
-          img.style.display = 'block';
-          img.onerror = () => {
-            img.style.display = 'none';
-            fallback.style.display = 'flex';
-            fallback.textContent = safeName.charAt(0).toUpperCase();
-          };
-        } else {
-          fallback.style.display = 'flex';
-          fallback.textContent = safeName.charAt(0).toUpperCase();
-        }
-      }
-
-      // Re-enable sign-out button
-      const btnSignout = dom['btn-signout'];
-      if (btnSignout) btnSignout.disabled = false;
-      clearStatus(dom, 'dash');
+  /* Handle redirect result (popup-blocked fallback) */
+  auth.getRedirectResult().catch(err => {
+    if (err.code && err.code !== 'auth/no-auth-event') {
+      showStatus('Sign-in failed. Please try again.', 'error');
     }
-
-    /* ── START ── */
-    bootstrap();
-  </script>
+  });
+</script>
 </body>
 </html>
