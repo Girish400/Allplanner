@@ -101,7 +101,7 @@
     .form-input{width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.9rem;background:#faf8f4;outline:none;transition:border-color .2s;color:var(--text-pri);}
     .form-input:focus{border-color:var(--sage);}
     .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
-    .form-error{color:#b33a2a;font-size:0.82rem;margin-bottom:10px;display:none;padding:8px 12px;background:rgba(179,58,42,0.06);border-radius:8px;border:1px solid rgba(179,58,42,0.2);}
+    .form-error{color:#8a1a0a;font-size:0.82rem;margin-bottom:10px;display:none;padding:12px 14px;background:rgba(179,58,42,0.10);border-radius:8px;border:1.5px solid rgba(179,58,42,0.35);line-height:1.5;}
     .form-error.visible{display:block;}
     .modal-actions{display:flex;gap:10px;justify-content:space-between;margin-top:20px;}
     .btn-modal-back{padding:11px 22px;border-radius:10px;border:1.5px solid #ddd;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;color:var(--text-sec);transition:var(--transition);}
@@ -488,25 +488,56 @@
     const errEl = document.getElementById('err3');
     btn.disabled = true; btn.textContent = 'Creating…';
     errEl.classList.remove('visible');
-    try {
-      const name     = document.getElementById('f-name').value.trim();
-      const loc      = document.getElementById('f-location').value.trim();
-      const start    = document.getElementById('f-start').value;
-      const end      = document.getElementById('f-end').value;
-      const mode     = document.getElementById('f-mode').value;
-      const tripCode = Math.random().toString(36).slice(2,8).toUpperCase();
-      const docRef   = await db.collection('trips').add({
-        name, location:loc, startDate:start, endDate:end,
-        mode, families:modalFamilies, tripCode,
-        ownerUID:currentUser.uid, ownerEmail:currentUser.email,
-        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-      });
-      closeModal();
-      window.location.href = `planner.html#${docRef.id}`;
-    } catch(err) {
-      console.error('[PlanAway] createTrip:', err);
+
+    /* Double-check auth is still live before writing */
+    if (!currentUser) {
       btn.disabled = false; btn.textContent = '🏕️ Create Trip';
-      errEl.textContent = 'Failed to create trip. Check your connection and try again.';
+      errEl.textContent = 'You are not signed in. Please refresh and sign in again.';
+      errEl.classList.add('visible');
+      return;
+    }
+
+    const name     = document.getElementById('f-name').value.trim();
+    const loc      = document.getElementById('f-location').value.trim();
+    const start    = document.getElementById('f-start').value;
+    const end      = document.getElementById('f-end').value;
+    const mode     = document.getElementById('f-mode').value;
+    const tripCode = Math.random().toString(36).slice(2,8).toUpperCase();
+
+    const payload = {
+      name,
+      location:  loc,
+      startDate: start,
+      endDate:   end,
+      mode,
+      families:  modalFamilies,
+      tripCode,
+      ownerUID:  currentUser.uid,
+      ownerEmail:currentUser.email,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+
+    console.log('[PlanAway] Writing trip:', payload);
+
+    try {
+      const docRef = await db.collection('trips').add(payload);
+      console.log('[PlanAway] Trip created:', docRef.id);
+      closeModal();
+      window.location.href = 'planner.html#' + docRef.id;
+    } catch (err) {
+      console.error('[PlanAway] createTrip FAILED:', err.code, err.message, err);
+      btn.disabled = false; btn.textContent = '🏕️ Create Trip';
+
+      /* Show the specific Firebase error so it's diagnosable */
+      let msg = 'Failed to create trip.';
+      if (err.code === 'permission-denied') {
+        msg = 'Permission denied by Firestore. Go to Firebase Console → Firestore → Rules and set them to allow writes. See instructions below.';
+      } else if (err.code === 'unavailable' || err.message?.includes('network')) {
+        msg = 'Network error — check your internet connection and try again.';
+      } else if (err.code) {
+        msg = `Error (${err.code}): ${err.message}`;
+      }
+      errEl.textContent = msg;
       errEl.classList.add('visible');
     }
   }
