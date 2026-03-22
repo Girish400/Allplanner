@@ -613,7 +613,7 @@
     const val = inp.value.trim();
     if (!val) return;
     /* FIX NEW: prevent duplicate family names (case-insensitive). */
-    if (modalFamilies.some(f => f.name.toLowerCase() === val.toLowerCase())) {
+    if (modalFamilies.some(f => f.name.trim().toLowerCase() === val.toLowerCase())) {
       showToast(`"${val}" is already in the list.`);
       inp.value = ''; return;
     }

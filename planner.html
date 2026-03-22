@@ -563,6 +563,7 @@
       }
 
       history.replaceState(null, '', `planner.html#${doc.id}`);
+      _joiningTrip = false; // reset so token refresh doesn't block re-entry
       loadTripById(doc.id, !alreadyMember);
 
     } catch (err) {
@@ -614,7 +615,8 @@
     }, err => {
       console.error('[PlanAway] Firestore:', err);
       setGuardMsg('Error loading trip — ' + err.code);
-      stopGuardSpinner(); /* FIX P4 */
+      stopGuardSpinner();
+      _loadedDocId = null; // allow reconnect attempt on next token refresh
     });
   }
 
@@ -894,7 +896,7 @@
         const isOtherLock = isChecked && checkedByUid && checkedByUid !== currentUser.uid;
 
         const row  = document.createElement('div');
-        row.className = 'checklist-item' + (isMine?'  checked-self':'') + (isOtherLock?' locked-by-other':'');
+        row.className = 'checklist-item' + (isMine?' checked-self':'') + (isOtherLock?' locked-by-other':'');
 
         const box  = document.createElement('div'); box.className = 'check-box';
         const mark = document.createElement('span'); mark.className = 'check-mark'; mark.textContent = '✓';
@@ -1102,7 +1104,6 @@
 
   function renderCosts(trip) {
     const costs   = Array.isArray(trip.costs) ? trip.costs : [];
-    const families = Array.isArray(trip.families) ? trip.families.map(f=>f.name) : [];
     const tbody   = document.getElementById('costs-body');
     tbody.innerHTML = '';
 
@@ -1134,11 +1135,17 @@
         tbody.appendChild(tr);
       });
     }
-    renderSettlement(costs, families);
+    renderSettlement(costs);
   }
 
   function renderSettlement(costs) {
-    /* Collect parties — skip the 'All' sentinel (it is not a real party). */
+    /* Check whether any costs used the 'All' sentinel (no families defined).
+       Those expenses cannot be settled without knowing who 'All' represents. */
+    const hasAllSentinel = costs.some(c =>
+      Array.isArray(c.splitBetween) && c.splitBetween.includes('All')
+    );
+
+    /* Collect real parties — skip the 'All' sentinel. */
     const allParties = new Set();
     costs.forEach(c => {
       if (c.paidBy) allParties.add(c.paidBy);
@@ -1194,6 +1201,13 @@
 
     if (!creditors.length && !debtors.length) {
       settlementEl.innerHTML = `<div class="no-debts">🎉 Everyone's square! No settlements needed.</div>`;
+      if (hasAllSentinel) {
+        settlementEl.innerHTML += `<div class="no-debts" style="color:var(--amber);border-top:1px solid rgba(122,179,138,0.12);margin-top:4px;">⚠️ Some expenses were split among "All" without families defined — add families in Trip Info for accurate settlements.</div>`;
+      }
+      return;
+    }
+    if (hasAllSentinel) {
+      settlementEl.innerHTML = `<div class="no-debts" style="color:var(--amber);">⚠️ Some expenses were split among "All" without families defined. Add families in Trip Info to calculate accurate settlements.</div>`;
       return;
     }
 
