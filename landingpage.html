@@ -325,36 +325,41 @@
     loadTrips(user);
   });
 
+  /* BUG 1 FIX: register these once at top-level, not inside setupNav which fires on
+     every onAuthStateChanged token refresh, causing stacked duplicate listeners. */
+  document.getElementById('btn-signout').addEventListener('click', () => {
+    auth.signOut().then(() => window.location.replace('index.html'));
+  });
+  document.getElementById('btn-new-trip').addEventListener('click', () => openModal());
+
   function setupNav(user) {
     const name  = (user.displayName || '').trim() || user.email?.split('@')[0] || 'Explorer';
     const first = name.split(' ')[0];
     document.getElementById('hero-greeting').textContent = `Hey, ${first} 👋`;
     document.getElementById('nav-user-name').textContent = first;
     const av = document.getElementById('nav-avatar');
+    /* BUG 7 FIX: clear before appending so repeated calls don't stack img elements */
+    av.innerHTML = '';
     if (user.photoURL) {
       const img = document.createElement('img');
       img.src = user.photoURL; img.alt = name; av.appendChild(img);
     } else {
       av.textContent = name.charAt(0).toUpperCase();
     }
-    document.getElementById('btn-signout').addEventListener('click', () =>
-      auth.signOut().then(() => window.location.replace('index.html'))
-    );
-    document.getElementById('btn-new-trip').addEventListener('click', openModal);
   }
 
   /* ── LOAD TRIPS: owner + guest ── */
   function loadTrips(user) {
-    const today = new Date(); today.setHours(0,0,0,0);
-
     /* Owner trips */
     db.collection('trips').where('ownerUID', '==', user.uid)
       .onSnapshot(snap => {
         ownerTrips = snap.docs.map(d => ({ id: d.id, _role:'owner', ...d.data() }));
-        mergeAndRender(today);
+        mergeAndRender();
       }, err => console.error('[PlanAway] owner trips:', err));
 
-    /* Guest trips — fetch all and filter client-side */
+    /* Guest trips — NOTE: Firestore does not support array-of-objects contains queries
+       without composite indexes, so we fetch all trips and filter client-side.
+       This is a known cost trade-off for small-scale apps. */
     db.collection('trips').onSnapshot(snap => {
       guestTrips = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
@@ -364,11 +369,15 @@
           t.guestMembers.some(m => m.uid === user.uid)
         )
         .map(t => ({ ...t, _role:'guest' }));
-      mergeAndRender(today);
+      mergeAndRender();
     }, err => console.error('[PlanAway] guest trips:', err));
   }
 
-  function mergeAndRender(today) {
+  function mergeAndRender() {
+    /* BUG 3 FIX: recompute today on every render — not once at page load —
+       so active/completed status stays correct if the page is left open overnight. */
+    const today = new Date(); today.setHours(0,0,0,0);
+
     const seen = new Set();
     const all = [];
     [...ownerTrips, ...guestTrips].forEach(t => {
@@ -604,7 +613,14 @@
       const btn = document.createElement('button');
       btn.className = 'family-row-remove'; btn.textContent = '✕';
       btn.setAttribute('aria-label', `Remove ${f.name}`);
-      btn.addEventListener('click', () => { modalFamilies.splice(i,1); renderFamiliesList(); });
+      /* BUG 6 FIX: capture the name at closure time and filter by it, not by index.
+         Splicing by index after prior removals gives wrong element due to stale i. */
+      const nameSnapshot = f.name;
+      btn.addEventListener('click', () => {
+        const idx = modalFamilies.findIndex(x => x.name === nameSnapshot);
+        if (idx !== -1) modalFamilies.splice(idx, 1);
+        renderFamiliesList();
+      });
       row.appendChild(span); row.appendChild(btn); el.appendChild(row);
     });
   }

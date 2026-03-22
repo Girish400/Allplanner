@@ -234,10 +234,16 @@
       .tabs-bar{padding:0 8px;} .tab{padding:12px 10px;font-size:0.78rem;}
       .stat-grid{grid-template-columns:1fr 1fr;}
       .nav-trip-dates{display:none;}
+      /* BUG 19 FIX: prevent nav-right overflow on narrow screens */
+      .nav-right{gap:5px;}
+      .trip-code-chip{display:none;}
+      #user-chip-name{display:none;}
+      .icon-btn{width:30px;height:30px;}
+      .btn-logout-nav{padding:5px 8px;}
+      .btn-logout-nav span{display:none;}
       .share-url-row{flex-direction:column;align-items:stretch;}
       .btn-copy{justify-content:center;}
       .edit-grid,.expense-grid,.expense-grid.three{grid-template-columns:1fr;}
-      .btn-logout-nav span{display:none;}
     }
   </style>
 </head>
@@ -721,7 +727,11 @@
 
     if (!name)  { showToast('Trip name cannot be empty.'); return; }
     if (!loc)   { showToast('Location cannot be empty.'); return; }
-    if (start && end && new Date(end) <= new Date(start)) {
+    /* BUG 11 FIX: require both dates — empty dates break fmtDate, nightsCount, meals, planner */
+    if (!start) { showToast('Please select a start date.'); return; }
+    if (!end)   { showToast('Please select an end date.'); return; }
+    /* BUG 10 FIX: append T00:00:00 for consistent local-time parsing across all timezones */
+    if (new Date(end + 'T00:00:00') <= new Date(start + 'T00:00:00')) {
       showToast('End date must be after start date.'); return;
     }
 
@@ -817,10 +827,17 @@
     }
 
     renderChecklist(d);
-    renderMeals(d);
-    renderDayPlanner(d);
+
+    /* BUG 9 FIX: Protect meal, day-planner and notes inputs from being wiped mid-typing.
+       Only re-render a section if the active (focused) element is not inside it. */
+    const active = document.activeElement;
+    const mealsEl   = document.getElementById('meals-container');
+    const dayEl     = document.getElementById('dayplan-container');
+    const notesEl   = document.getElementById('notes-area');
+    if (!mealsEl.contains(active))  renderMeals(d);
+    if (!dayEl.contains(active))    renderDayPlanner(d);
     renderCosts(d);
-    document.getElementById('notes-area').value = d.notes || '';
+    if (document.activeElement !== notesEl) document.getElementById('notes-area').value = d.notes || '';
   }
 
   function makeMemberCard({displayName, email, photoURL, role, isYou}) {
@@ -1040,6 +1057,8 @@
       document.getElementById('ef-amount').value  = '';
       document.getElementById('ef-paidby').value  = '';
       document.getElementById('ef-split').value   = 'all';
+      /* BUG 18 FIX: reset category to default when re-opening the form */
+      document.getElementById('ef-category').value = 'Food';
       document.getElementById('ef-family-checkboxes').style.display = 'none';
       setTimeout(() => document.getElementById('ef-item').focus(), 100);
     }
@@ -1067,17 +1086,26 @@
       if (!splitFamilies.length) { showToast('Select at least one family to split between.'); return; }
     }
 
+    /* BUG 13 FIX: use crypto.randomUUID() for collision-proof IDs instead of Date.now() */
+    const expId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2) + Date.now().toString(36);
+
     const expense = {
-      id:       Date.now().toString(),
+      id: expId,
       item, category:cat, paidBy, amount,
       splitBetween: splitFamilies,
       addedAt: new Date().toISOString(),
     };
 
     try {
-      const costs = Array.isArray(tripData.costs) ? [...tripData.costs] : [];
-      costs.push(expense);
-      await db.collection('trips').doc(tripData.id).update({ costs });
+      /* BUG 15 FIX: use Firestore transaction so concurrent adds don't overwrite each other */
+      const tripRef = db.collection('trips').doc(tripData.id);
+      await db.runTransaction(async tx => {
+        const doc = await tx.get(tripRef);
+        const current = Array.isArray(doc.data()?.costs) ? doc.data().costs : [];
+        tx.update(tripRef, { costs: [...current, expense] });
+      });
       toggleExpenseForm(false);
       showToast('Expense added ✅');
     } catch (err) {
@@ -1087,12 +1115,18 @@
 
   async function deleteExpense(expId) {
     if (!tripData) return;
-    const costs = (Array.isArray(tripData.costs) ? tripData.costs : []).filter(c => c.id !== expId);
+    /* BUG 14 FIX: use Firestore transaction so concurrent deletes don't resurrect
+       each other's deletions from stale in-memory copies. */
     try {
-      await db.collection('trips').doc(tripData.id).update({ costs });
+      const tripRef = db.collection('trips').doc(tripData.id);
+      await db.runTransaction(async tx => {
+        const doc = await tx.get(tripRef);
+        const current = Array.isArray(doc.data()?.costs) ? doc.data().costs : [];
+        tx.update(tripRef, { costs: current.filter(c => c.id !== expId) });
+      });
       showToast('Expense removed.');
     } catch (err) {
-      showToast('Error removing expense.');
+      showToast('Error removing expense — ' + (err.message||'try again.'));
     }
   }
 
@@ -1148,11 +1182,15 @@
   }
 
   function renderSettlement(costs, families) {
-    /* Build all known parties from expenses */
+    /* Build all known parties from expenses — exclude the 'All' sentinel */
     const allParties = new Set();
     costs.forEach(c => {
       if (c.paidBy) allParties.add(c.paidBy);
-      if (Array.isArray(c.splitBetween)) c.splitBetween.forEach(f => allParties.add(f));
+      /* BUG 12 FIX: skip the 'All' placeholder — it has no meaning as a real party
+         in the settlement ledger and produces nonsensical "All owes X" rows. */
+      if (Array.isArray(c.splitBetween)) {
+        c.splitBetween.forEach(f => { if (f !== 'All') allParties.add(f); });
+      }
     });
 
     /* Per-party: total paid, total owed */
