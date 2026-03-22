@@ -53,7 +53,6 @@
     .trips-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
     @media(max-width:640px){.trips-grid{grid-template-columns:1fr;}}
 
-    /* TRIP CARD WRAPPER for delete button positioning */
     .trip-card-wrap{position:relative;}
     .trip-card{background:#fff;border-radius:18px;border:1.5px solid rgba(122,179,138,0.18);box-shadow:var(--shadow-md);overflow:hidden;cursor:pointer;transition:var(--transition);text-decoration:none;color:inherit;display:block;}
     .trip-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--sage);}
@@ -78,14 +77,12 @@
     .trip-arrow{color:var(--sage);font-size:1.1rem;}
     .trip-card.completed .trip-arrow{color:#aaa;}
 
-    /* MEMBER AVATARS ROW */
     .trip-members-row{display:flex;align-items:center;margin-bottom:10px;padding:4px 0;}
     .member-avatar-sm{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--moss),var(--sage));display:inline-flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;color:#fff;border:2px solid #fff;overflow:hidden;flex-shrink:0;margin-right:-8px;box-shadow:0 1px 4px rgba(0,0,0,0.12);}
     .member-avatar-sm img{width:100%;height:100%;object-fit:cover;}
     .member-avatar-sm.is-owner{background:linear-gradient(135deg,var(--amber),#b86020);}
     .members-count-pill{font-size:0.75rem;color:var(--text-sec);margin-left:16px;white-space:nowrap;}
 
-    /* DELETE BUTTON */
     .trip-delete-btn{position:absolute;top:12px;right:12px;z-index:10;width:32px;height:32px;border-radius:50%;background:rgba(192,96,58,0.9);border:2px solid rgba(255,255,255,0.4);color:#fff;font-size:0.82rem;cursor:pointer;display:none;align-items:center;justify-content:center;transition:var(--transition);box-shadow:0 2px 10px rgba(0,0,0,0.25);}
     .trip-card-wrap:hover .trip-delete-btn{display:flex;}
     .trip-delete-btn:hover{background:var(--ember);transform:scale(1.12);}
@@ -100,7 +97,6 @@
     .fade-in{animation:fadeIn .4s ease both;}
     @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
-    /* MODAL */
     #modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(26,58,42,0.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
     #modal-overlay.open{display:flex;}
     #modal-box{background:#fff;border-radius:22px;width:100%;max-width:500px;margin:20px;box-shadow:0 24px 80px rgba(26,58,42,0.25);overflow:hidden;animation:modalIn .35s cubic-bezier(0.34,1.56,0.64,1) both;}
@@ -134,7 +130,6 @@
     .review-box{background:#faf8f4;border-radius:12px;padding:16px;margin-bottom:4px;font-size:0.875rem;line-height:2.2;color:var(--text-sec);}
     .review-box strong{color:var(--forest);}
 
-    /* CONFIRM DELETE MODAL */
     #confirm-overlay{display:none;position:fixed;inset:0;z-index:600;background:rgba(26,58,42,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
     #confirm-overlay.open{display:flex;}
     #confirm-box{background:#fff;border-radius:20px;width:100%;max-width:420px;margin:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.3);animation:modalIn .3s cubic-bezier(0.34,1.56,0.64,1) both;}
@@ -190,9 +185,7 @@
     <div class="trips-grid" id="active-grid">
       <div class="skeleton"></div><div class="skeleton"></div>
     </div>
-
     <hr class="section-divider" />
-
     <div class="section-header">
       <div class="section-title">Completed Trips</div>
       <div class="section-badge" id="completed-count">—</div>
@@ -281,9 +274,7 @@
 <!-- CONFIRM DELETE MODAL -->
 <div id="confirm-overlay">
   <div id="confirm-box">
-    <div class="confirm-header">
-      <h3>🗑️ Delete Trip?</h3>
-    </div>
+    <div class="confirm-header"><h3>🗑️ Delete Trip?</h3></div>
     <div class="confirm-body">
       <p>Are you sure you want to permanently delete <strong id="confirm-trip-name">this trip</strong>?<br>All data — checklist, meals, costs, and notes — will be lost forever.</p>
       <div class="confirm-actions">
@@ -297,6 +288,9 @@
 <div id="toast"></div>
 
 <script>
+  /* ════════════════════════════════════════════════════
+     FIREBASE
+  ════════════════════════════════════════════════════ */
   const FIREBASE_CONFIG = {
     apiKey:'AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc',
     authDomain:'camp-cbf1d.firebaseapp.com',
@@ -309,37 +303,62 @@
   const auth = firebase.auth();
   const db   = firebase.firestore();
 
-  let currentUser = null;
+  /* ════════════════════════════════════════════════════
+     STATE
+  ════════════════════════════════════════════════════ */
+  let currentUser     = null;
   let pendingDeleteId = null;
-  let ownerTrips = [];
-  let guestTrips = [];
-  let _toastTimer = null;
+  let ownerTrips      = [];
+  let guestTrips      = [];
+  let _toastTimer     = null;
+  /* FIX L1: store unsubscribe handles so listeners are torn down on re-auth. */
+  let _ownerUnsub     = null;
+  let _guestUnsub     = null;
 
-  /* ── AUTH GUARD ── */
+  /* ════════════════════════════════════════════════════
+     ONE-TIME UI LISTENERS (never inside auth callback)
+     FIX L1: registering inside onAuthStateChanged stacks
+     duplicate listeners on every hourly token refresh.
+  ════════════════════════════════════════════════════ */
+  document.getElementById('btn-signout').addEventListener('click', () =>
+    auth.signOut().then(() => window.location.replace('index.html'))
+  );
+  document.getElementById('btn-new-trip').addEventListener('click', () => openModal());
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  });
+  document.getElementById('confirm-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('confirm-overlay')) closeConfirm();
+  });
+
+  /* ════════════════════════════════════════════════════
+     AUTH GUARD
+  ════════════════════════════════════════════════════ */
   auth.onAuthStateChanged(user => {
     if (!user) { window.location.replace('index.html'); return; }
+
+    /* FIX L10: reset arrays immediately so a new user never briefly sees the
+       previous user's trips while fresh snapshots are resolving. */
+    ownerTrips = [];
+    guestTrips = [];
     currentUser = user;
+
     document.getElementById('auth-guard').style.display = 'none';
     document.getElementById('page-shell').style.display = 'block';
     setupNav(user);
     loadTrips(user);
   });
 
-  /* BUG 1 FIX: register these once at top-level, not inside setupNav which fires on
-     every onAuthStateChanged token refresh, causing stacked duplicate listeners. */
-  document.getElementById('btn-signout').addEventListener('click', () => {
-    auth.signOut().then(() => window.location.replace('index.html'));
-  });
-  document.getElementById('btn-new-trip').addEventListener('click', () => openModal());
-
+  /* ════════════════════════════════════════════════════
+     NAV
+  ════════════════════════════════════════════════════ */
   function setupNav(user) {
     const name  = (user.displayName || '').trim() || user.email?.split('@')[0] || 'Explorer';
     const first = name.split(' ')[0];
     document.getElementById('hero-greeting').textContent = `Hey, ${first} 👋`;
     document.getElementById('nav-user-name').textContent = first;
     const av = document.getElementById('nav-avatar');
-    /* BUG 7 FIX: clear before appending so repeated calls don't stack img elements */
-    av.innerHTML = '';
+    av.innerHTML = ''; /* clear before appending — prevents stacked imgs on re-auth */
     if (user.photoURL) {
       const img = document.createElement('img');
       img.src = user.photoURL; img.alt = name; av.appendChild(img);
@@ -348,19 +367,23 @@
     }
   }
 
-  /* ── LOAD TRIPS: owner + guest ── */
+  /* ════════════════════════════════════════════════════
+     LOAD TRIPS
+  ════════════════════════════════════════════════════ */
   function loadTrips(user) {
-    /* Owner trips */
-    db.collection('trips').where('ownerUID', '==', user.uid)
+    /* FIX L1: tear down any existing listeners before creating new ones. */
+    if (_ownerUnsub) { _ownerUnsub(); _ownerUnsub = null; }
+    if (_guestUnsub) { _guestUnsub(); _guestUnsub = null; }
+
+    _ownerUnsub = db.collection('trips').where('ownerUID', '==', user.uid)
       .onSnapshot(snap => {
         ownerTrips = snap.docs.map(d => ({ id: d.id, _role:'owner', ...d.data() }));
         mergeAndRender();
       }, err => console.error('[PlanAway] owner trips:', err));
 
-    /* Guest trips — NOTE: Firestore does not support array-of-objects contains queries
-       without composite indexes, so we fetch all trips and filter client-side.
-       This is a known cost trade-off for small-scale apps. */
-    db.collection('trips').onSnapshot(snap => {
+    /* Firestore does not support array-of-objects contains queries without
+       composite indexes, so we scan all trips and filter client-side. */
+    _guestUnsub = db.collection('trips').onSnapshot(snap => {
       guestTrips = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .filter(t =>
@@ -373,13 +396,17 @@
     }, err => console.error('[PlanAway] guest trips:', err));
   }
 
+  /* ════════════════════════════════════════════════════
+     MERGE & RENDER
+  ════════════════════════════════════════════════════ */
   function mergeAndRender() {
-    /* BUG 3 FIX: recompute today on every render — not once at page load —
-       so active/completed status stays correct if the page is left open overnight. */
+    /* Recompute "today" every call so overnight sessions stay accurate. */
     const today = new Date(); today.setHours(0,0,0,0);
 
     const seen = new Set();
-    const all = [];
+    const all  = [];
+    /* FIX L11: ownerTrips is spread first so owner role wins the dedup when
+       both snapshots contain the same trip ID (race-condition window). */
     [...ownerTrips, ...guestTrips].forEach(t => {
       if (!seen.has(t.id)) { seen.add(t.id); all.push(t); }
     });
@@ -394,15 +421,17 @@
     renderGrid('completed-grid', 'completed-count', completed, true);
   }
 
-  /* ── HELPERS ── */
+  /* ════════════════════════════════════════════════════
+     HELPERS
+  ════════════════════════════════════════════════════ */
   function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function modeIcon(m){ return {tent:'⛺',rv:'🚐',both:'⛺🚐',cabin:'🏡'}[m]||'🏕️'; }
   function fmtDate(ds){
-    if(!ds) return '—';
+    if (!ds) return '—';
     return new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   }
   function nightsCount(s,e){
-    if(!s||!e) return '—';
+    if (!s||!e) return 0;
     return Math.max(0, Math.round((new Date(e)-new Date(s))/86400000));
   }
   function showToast(msg) {
@@ -412,7 +441,9 @@
     _toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
   }
 
-  /* ── RENDER GRID ── */
+  /* ════════════════════════════════════════════════════
+     RENDER GRID
+  ════════════════════════════════════════════════════ */
   function renderGrid(gridId, countId, trips, isCompleted) {
     const grid = document.getElementById(gridId);
     document.getElementById(countId).textContent = `${trips.length} trip${trips.length!==1?'s':''}`;
@@ -433,75 +464,60 @@
     trips.forEach((trip, i) => {
       const isGuest = trip._role === 'guest';
       const isOwner = trip._role === 'owner';
-      const start = trip.startDate ? new Date(trip.startDate+'T12:00:00') : null;
-      const end   = trip.endDate   ? new Date(trip.endDate+'T12:00:00')   : null;
+      const start   = trip.startDate ? new Date(trip.startDate+'T12:00:00') : null;
+      const end     = trip.endDate   ? new Date(trip.endDate+'T12:00:00')   : null;
 
-      let badgeClass='badge-upcoming', badgeText='Upcoming';
-      if (isCompleted)                                             { badgeClass='badge-completed'; badgeText='Completed'; }
-      else if (isGuest)                                            { badgeClass='badge-guest';     badgeText='👥 Guest'; }
-      else if (start && start<=today && end && end>=today)        { badgeClass='badge-active';    badgeText='Active'; }
+      let badgeClass = 'badge-upcoming', badgeText = 'Upcoming';
+      if (isCompleted)                                     { badgeClass='badge-completed'; badgeText='Completed'; }
+      else if (isGuest)                                    { badgeClass='badge-guest';     badgeText='👥 Guest';  }
+      else if (start && start<=today && end && end>=today) { badgeClass='badge-active';    badgeText='Active';    }
 
-      /* Build members avatar row */
-      const ownerInfo = {
-        displayName: trip.ownerDisplayName || trip.ownerEmail || 'Owner',
-        photoURL:    trip.ownerPhotoURL || '',
-        isOwner: true,
-      };
-      const guests = Array.isArray(trip.guestMembers) ? trip.guestMembers : [];
+      /* Members avatars row */
+      const ownerInfo  = { displayName:trip.ownerDisplayName||trip.ownerEmail||'Owner', photoURL:trip.ownerPhotoURL||'', isOwner:true };
+      const guests     = Array.isArray(trip.guestMembers) ? trip.guestMembers : [];
       const allMembers = [ownerInfo, ...guests];
-      const maxShow = 5;
 
-      const avatarsHtml = allMembers.slice(0, maxShow).map(m => {
-        const nm = m.displayName || m.email || '?';
-        const initials = nm.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-        if (m.photoURL) {
-          return `<div class="member-avatar-sm${m.isOwner?' is-owner':''}" title="${esc(nm)}"><img src="${esc(m.photoURL)}" alt="${esc(nm)}" /></div>`;
-        }
-        return `<div class="member-avatar-sm${m.isOwner?' is-owner':''}" title="${esc(nm)}">${esc(initials)}</div>`;
+      const avatarsHtml = allMembers.slice(0,5).map(m => {
+        const nm  = m.displayName || m.email || '?';
+        const ini = nm.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const cls = `member-avatar-sm${m.isOwner?' is-owner':''}`;
+        if (m.photoURL) return `<div class="${cls}" title="${esc(nm)}"><img src="${esc(m.photoURL)}" alt="${esc(nm)}" /></div>`;
+        return `<div class="${cls}" title="${esc(nm)}">${esc(ini)}</div>`;
       }).join('');
       const membersLabel = `<span class="members-count-pill">${allMembers.length} member${allMembers.length!==1?'s':''}</span>`;
 
-      /* Family chips */
       const families = Array.isArray(trip.families) ? trip.families : [];
-      const chips = families.slice(0,3).map(f=>`<span class="member-chip">${esc(f.name||f)}</span>`).join('')
+      const chips    = families.slice(0,3).map(f=>`<span class="member-chip">${esc(f.name||f)}</span>`).join('')
         + (families.length>3 ? `<span class="member-chip">+${families.length-3}</span>` : '');
 
       const wrap = document.createElement('div');
       wrap.className = 'trip-card-wrap fade-in';
       wrap.style.animationDelay = `${i*0.06}s`;
 
-      /* Delete button — owner only */
       if (isOwner) {
         const delBtn = document.createElement('button');
-        delBtn.className = 'trip-delete-btn';
-        delBtn.title = 'Delete this trip';
-        delBtn.innerHTML = '🗑️';
-        delBtn.addEventListener('click', e => {
-          e.preventDefault(); e.stopPropagation();
-          openConfirm(trip.id, trip.name || 'this trip');
-        });
+        delBtn.className = 'trip-delete-btn'; delBtn.title = 'Delete this trip'; delBtn.innerHTML = '🗑️';
+        delBtn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); openConfirm(trip.id, trip.name||'this trip'); });
         wrap.appendChild(delBtn);
       }
 
+      /* FIX L5: fall back to hash-URL if tripCode is missing — prevents "Invalid invite link". */
       const plannerUrl = isGuest
-        ? `planner.html?invite=${encodeURIComponent(trip.tripCode||'')}`
+        ? (trip.tripCode ? `planner.html?invite=${encodeURIComponent(trip.tripCode)}` : `planner.html#${trip.id}`)
         : `planner.html#${trip.id}`;
 
       const card = document.createElement('a');
-      card.href = plannerUrl;
+      card.href      = plannerUrl;
       card.className = `trip-card${isCompleted?' completed':''}${isGuest?' guest-trip':''}`;
       card.innerHTML = `
         <div class="trip-card-header">
-          <span class="trip-status-badge ${badgeClass}">${badgeText}</span>
+          <span class="trip-status-badge ${esc(badgeClass)}">${esc(badgeText)}</span>
           <span class="trip-card-icon">${modeIcon(trip.mode)}</span>
           <div class="trip-card-name">${esc(trip.name||'Unnamed Trip')}</div>
           <div class="trip-card-location">📍 ${esc(trip.location||'No location set')}</div>
         </div>
         <div class="trip-card-body">
-          <div class="trip-members-row">
-            ${avatarsHtml}
-            ${membersLabel}
-          </div>
+          <div class="trip-members-row">${avatarsHtml}${membersLabel}</div>
           <div class="trip-meta">
             <div class="trip-meta-item"><span class="trip-meta-label">Start</span><span class="trip-meta-value">${fmtDate(trip.startDate)}</span></div>
             <div class="trip-meta-item"><span class="trip-meta-label">End</span><span class="trip-meta-value">${fmtDate(trip.endDate)}</span></div>
@@ -517,7 +533,9 @@
     });
   }
 
-  /* ── CONFIRM DELETE ── */
+  /* ════════════════════════════════════════════════════
+     CONFIRM DELETE
+  ════════════════════════════════════════════════════ */
   function openConfirm(tripId, tripName) {
     pendingDeleteId = tripId;
     document.getElementById('confirm-trip-name').textContent = tripName;
@@ -542,12 +560,12 @@
       btn.disabled = false; btn.textContent = 'Yes, Delete';
     }
   }
-  document.getElementById('confirm-overlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('confirm-overlay')) closeConfirm();
-  });
 
-  /* ── MODAL ── */
+  /* ════════════════════════════════════════════════════
+     CREATE TRIP MODAL
+  ════════════════════════════════════════════════════ */
   let modalFamilies = [];
+
   function openModal() {
     modalFamilies = [];
     ['f-name','f-location','f-family-input'].forEach(id => document.getElementById(id).value='');
@@ -560,9 +578,6 @@
     setTimeout(() => document.getElementById('f-name').focus(), 100);
   }
   function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
-  document.getElementById('modal-overlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('modal-overlay')) closeModal();
-  });
 
   function goStep(n) {
     if (n===2 && !validateStep1()) return;
@@ -586,7 +601,8 @@
     if (!start) return fail('Please select a start date.');
     if (!end)   return fail('Please select an end date.');
     const today = new Date(); today.setHours(0,0,0,0);
-    const s = new Date(start+'T00:00:00'); const e = new Date(end+'T00:00:00');
+    const s = new Date(start+'T00:00:00');
+    const e = new Date(end+'T00:00:00');
     if (s < today) return fail('Start date cannot be in the past.');
     if (e <= s)    return fail('End date must be after start date.');
     return true;
@@ -596,6 +612,11 @@
     const inp = document.getElementById('f-family-input');
     const val = inp.value.trim();
     if (!val) return;
+    /* FIX NEW: prevent duplicate family names (case-insensitive). */
+    if (modalFamilies.some(f => f.name.toLowerCase() === val.toLowerCase())) {
+      showToast(`"${val}" is already in the list.`);
+      inp.value = ''; return;
+    }
     modalFamilies.push({ name: val, members: [] });
     inp.value = '';
     renderFamiliesList();
@@ -605,17 +626,15 @@
   function renderFamiliesList() {
     const el = document.getElementById('families-list');
     el.innerHTML = '';
-    modalFamilies.forEach((f, i) => {
-      const row = document.createElement('div'); row.className = 'family-row';
+    modalFamilies.forEach(f => {
+      const row  = document.createElement('div'); row.className = 'family-row';
       const span = document.createElement('span');
       span.style.cssText = 'font-weight:500;color:var(--forest);';
-      span.textContent = `👨‍👩‍👧 ${f.name}`;
-      const btn = document.createElement('button');
+      span.textContent   = `👨‍👩‍👧 ${f.name}`;
+      const btn  = document.createElement('button');
       btn.className = 'family-row-remove'; btn.textContent = '✕';
       btn.setAttribute('aria-label', `Remove ${f.name}`);
-      /* BUG 6 FIX: capture the name at closure time and filter by it, not by index.
-         Splicing by index after prior removals gives wrong element due to stale i. */
-      const nameSnapshot = f.name;
+      const nameSnapshot = f.name; /* capture to avoid stale-index closure */
       btn.addEventListener('click', () => {
         const idx = modalFamilies.findIndex(x => x.name === nameSnapshot);
         if (idx !== -1) modalFamilies.splice(idx, 1);
@@ -627,61 +646,88 @@
 
   function buildReview() {
     const modeLabels = {tent:'Tent Only',rv:'RV Only',both:'Both Tent & RV',cabin:'Cabin'};
-    const name  = document.getElementById('f-name').value.trim();
-    const loc   = document.getElementById('f-location').value.trim();
-    const start = document.getElementById('f-start').value;
-    const end   = document.getElementById('f-end').value;
-    const mode  = document.getElementById('f-mode').value;
-    const box   = document.getElementById('review-box');
+    const name   = document.getElementById('f-name').value.trim();
+    const loc    = document.getElementById('f-location').value.trim();
+    const start  = document.getElementById('f-start').value;
+    const end    = document.getElementById('f-end').value;
+    const mode   = document.getElementById('f-mode').value;
+    const nights = nightsCount(start, end);
+    const box    = document.getElementById('review-box');
     box.innerHTML = '';
     [
       ['Trip',     name],
       ['Location', loc],
-      ['Dates',    `${fmtDate(start)} → ${fmtDate(end)} (${nightsCount(start,end)} nights)`],
+      ['Dates',    `${fmtDate(start)} → ${fmtDate(end)} (${nights} night${nights!==1?'s':''})`],
       ['Mode',     modeLabels[mode]||mode],
       ['Families', modalFamilies.length ? modalFamilies.map(f=>f.name).join(', ') : 'None — you can add later'],
     ].forEach(([label, value]) => {
       const div = document.createElement('div');
-      const b = document.createElement('strong'); b.textContent = label+': ';
+      const b   = document.createElement('strong'); b.textContent = label+': ';
       div.appendChild(b); div.appendChild(document.createTextNode(value)); box.appendChild(div);
     });
   }
 
+  /* FIX L4: unique tripCode with a Firestore uniqueness check. */
+  async function getUniqueTripCode() {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = Math.random().toString(36).slice(2,8).toUpperCase();
+      const snap = await db.collection('trips').where('tripCode','==',code).limit(1).get();
+      if (snap.empty) return code;
+    }
+    return Math.random().toString(36).slice(2,14).toUpperCase(); /* ultra-fallback */
+  }
+
   async function createTrip() {
-    const btn = document.getElementById('btn-create');
+    const btn   = document.getElementById('btn-create');
     const errEl = document.getElementById('err3');
     btn.disabled = true; btn.textContent = 'Creating…';
     errEl.classList.remove('visible');
+
     if (!currentUser) {
       btn.disabled = false; btn.textContent = '🏕️ Create Trip';
       errEl.textContent = 'You are not signed in. Please refresh.';
       errEl.classList.add('visible'); return;
     }
-    const name     = document.getElementById('f-name').value.trim();
-    const loc      = document.getElementById('f-location').value.trim();
-    const start    = document.getElementById('f-start').value;
-    const end      = document.getElementById('f-end').value;
-    const mode     = document.getElementById('f-mode').value;
-    const tripCode = Math.random().toString(36).slice(2,8).toUpperCase();
-    const payload  = {
-      name, location:loc, startDate:start, endDate:end, mode,
-      families: modalFamilies, tripCode,
-      ownerUID:         currentUser.uid,
-      ownerEmail:       currentUser.email,
-      ownerDisplayName: currentUser.displayName || currentUser.email,
-      ownerPhotoURL:    currentUser.photoURL || '',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    };
+
+    const name  = document.getElementById('f-name').value.trim();
+    const loc   = document.getElementById('f-location').value.trim();
+    const start = document.getElementById('f-start').value;
+    const end   = document.getElementById('f-end').value;
+    const mode  = document.getElementById('f-mode').value;
+
+    /* FIX L3: re-validate at submit time to catch midnight-boundary edge case. */
+    const today = new Date(); today.setHours(0,0,0,0);
+    const s = new Date(start+'T00:00:00');
+    const e = new Date(end+'T00:00:00');
+    const fail = msg => { errEl.textContent=msg; errEl.classList.add('visible'); btn.disabled=false; btn.textContent='🏕️ Create Trip'; };
+    if (!name)     { fail('Please enter a trip name.'); return; }
+    if (!loc)      { fail('Please enter a location.'); return; }
+    if (!start)    { fail('Please select a start date.'); return; }
+    if (!end)      { fail('Please select an end date.'); return; }
+    if (s < today) { fail('Start date cannot be in the past.'); return; }
+    if (e <= s)    { fail('End date must be after start date.'); return; }
+
     try {
+      const tripCode = await getUniqueTripCode();
+      const payload  = {
+        name, location:loc, startDate:start, endDate:end, mode,
+        families:         modalFamilies,
+        tripCode,
+        ownerUID:         currentUser.uid,
+        ownerEmail:       currentUser.email,
+        ownerDisplayName: currentUser.displayName || currentUser.email,
+        ownerPhotoURL:    currentUser.photoURL || '',
+        createdAt:        firebase.firestore.FieldValue.serverTimestamp(),
+      };
       const docRef = await db.collection('trips').add(payload);
       closeModal();
       window.location.href = 'planner.html#' + docRef.id;
     } catch (err) {
       btn.disabled = false; btn.textContent = '🏕️ Create Trip';
       let msg = 'Failed to create trip.';
-      if (err.code==='permission-denied') msg='Permission denied by Firestore. Check your Firebase rules.';
-      else if (err.code==='unavailable'||err.message?.includes('network')) msg='Network error — check your connection.';
-      else if (err.code) msg=`Error (${err.code}): ${err.message}`;
+      if (err.code==='permission-denied') msg = 'Permission denied. Check your Firestore rules.';
+      else if (err.code==='unavailable'||err.message?.includes('network')) msg = 'Network error — check your connection.';
+      else if (err.code) msg = `Error (${err.code}): ${err.message}`;
       errEl.textContent = msg; errEl.classList.add('visible');
     }
   }

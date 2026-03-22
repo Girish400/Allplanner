@@ -20,23 +20,21 @@
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'DM Sans',sans-serif;background:#f5f0e8;color:var(--text-pri);min-height:100vh;}
 
-    /* ── AUTH GUARD ── */
     #auth-guard{position:fixed;inset:0;z-index:1000;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
     .guard-spinner{width:44px;height:44px;border:3px solid rgba(122,179,138,0.2);border-top-color:var(--moss);border-radius:50%;animation:spin .85s linear infinite;}
     .guard-msg{font-size:0.9rem;color:var(--text-sec);text-align:center;max-width:280px;line-height:1.5;}
     @keyframes spin{to{transform:rotate(360deg)}}
+    /* FIX P4: hide spinner on error states */
+    .guard-spinner.hidden{display:none;}
     #page-shell{display:none;}
 
-    /* ── GUEST JOIN BANNER ── */
     #join-banner{background:linear-gradient(135deg,var(--moss),#3a7050);color:#fff;padding:14px 28px;display:none;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
     #join-banner .join-msg{font-size:0.9rem;line-height:1.4;}
     #join-banner .join-msg strong{display:block;font-size:1rem;margin-bottom:2px;}
     #join-banner .join-role-badge{background:rgba(255,255,255,0.2);border-radius:20px;padding:3px 12px;font-size:0.75rem;font-weight:600;letter-spacing:0.04em;}
 
-    /* ── COMPLETED BANNER ── */
     #completed-banner{background:linear-gradient(135deg,#444,#666);color:rgba(255,255,255,0.85);padding:11px 28px;font-size:0.875rem;font-weight:500;display:none;align-items:center;gap:8px;}
 
-    /* ── TOP NAV ── */
     .topnav{background:var(--forest);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.2);}
     .nav-left{display:flex;align-items:center;gap:16px;}
     .back-link{display:inline-flex;align-items:center;gap:5px;color:rgba(245,240,232,0.55);font-size:0.82rem;text-decoration:none;transition:var(--transition);}
@@ -49,20 +47,16 @@
     .user-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:5px 10px;color:rgba(245,240,232,0.85);font-size:0.82rem;font-weight:500;}
     .user-chip-av{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--moss),var(--sage));display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0;}
     .user-chip-av img{width:100%;height:100%;object-fit:cover;}
-    .icon-btn{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(245,240,232,0.8);font-size:1rem;transition:var(--transition);position:relative;}
+    .icon-btn{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(245,240,232,0.8);font-size:1rem;transition:var(--transition);}
     .icon-btn:hover{background:rgba(255,255,255,0.2);}
-
-    /* Logout button in nav */
     .btn-logout-nav{padding:5px 14px;border-radius:8px;background:rgba(192,96,58,0.18);color:#f5c8b8;border:1px solid rgba(192,96,58,0.35);font-family:'DM Sans',sans-serif;font-size:0.78rem;font-weight:500;cursor:pointer;transition:var(--transition);white-space:nowrap;}
     .btn-logout-nav:hover{background:rgba(192,96,58,0.32);}
 
-    /* ── TABS ── */
     .tabs-bar{background:#fff;border-bottom:2px solid rgba(122,179,138,0.15);padding:0 28px;display:flex;gap:0;overflow-x:auto;}
     .tab{padding:14px 18px;font-size:0.875rem;font-weight:500;color:var(--text-sec);cursor:pointer;white-space:nowrap;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:var(--transition);display:flex;align-items:center;gap:6px;background:none;border-left:none;border-right:none;border-top:none;font-family:'DM Sans',sans-serif;}
     .tab:hover{color:var(--forest);}
     .tab.active{color:var(--forest);border-bottom-color:var(--moss);font-weight:600;}
 
-    /* ── MAIN ── */
     .main{max-width:1100px;margin:0 auto;padding:32px 28px 80px;}
     .tab-panel{display:none;animation:fadeIn .3s ease;}
     .tab-panel.active{display:block;}
@@ -74,7 +68,6 @@
     .live-dot{width:7px;height:7px;border-radius:50%;background:#2a6b3a;animation:pulse 2s ease infinite;}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 
-    /* ── SHARE BOX ── */
     .share-box{background:rgba(42,92,62,0.07);border:1.5px solid rgba(122,179,138,0.25);border-radius:14px;padding:18px 22px;margin-bottom:24px;}
     .share-box-top{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:12px;}
     .code-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--sage);font-weight:600;margin-bottom:4px;}
@@ -87,7 +80,7 @@
     .share-hint{font-size:0.78rem;color:var(--text-sec);margin-top:10px;line-height:1.5;}
     .share-hint strong{color:var(--forest);}
 
-    /* ── TRIP OVERVIEW EDIT ── */
+    /* EDIT OVERVIEW */
     .overview-edit-box{background:#fff;border:1.5px solid rgba(122,179,138,0.25);border-radius:14px;padding:22px 24px;margin-bottom:24px;}
     .overview-edit-box h3{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--forest);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
     .edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
@@ -99,12 +92,12 @@
     .edit-actions{margin-top:16px;display:flex;gap:10px;}
     .btn-save-overview{padding:10px 22px;border-radius:10px;background:var(--moss);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;transition:var(--transition);}
     .btn-save-overview:hover{background:var(--forest);}
+    .btn-save-overview:disabled{opacity:0.55;cursor:not-allowed;}
     .btn-cancel-edit{padding:10px 18px;border-radius:10px;border:1.5px solid #ddd;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;color:var(--text-sec);transition:var(--transition);}
     .btn-cancel-edit:hover{background:rgba(0,0,0,0.04);}
     .btn-edit-overview{padding:9px 18px;border-radius:10px;border:1.5px solid rgba(122,179,138,0.4);background:rgba(122,179,138,0.08);color:var(--moss);font-family:'DM Sans',sans-serif;font-size:0.83rem;font-weight:600;cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:6px;}
     .btn-edit-overview:hover{background:rgba(122,179,138,0.18);}
 
-    /* ── MEMBERS SECTION ── */
     .members-section{margin-top:28px;}
     .members-section h3{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--forest);margin-bottom:16px;}
     .members-grid{display:flex;flex-wrap:wrap;gap:12px;}
@@ -117,7 +110,6 @@
     .role-owner{color:var(--amber);}
     .role-member{color:var(--sage);}
 
-    /* ── STAT GRID ── */
     .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:14px;margin-bottom:32px;}
     .stat-card{background:#fff;border-radius:14px;border:1.5px solid rgba(122,179,138,0.18);padding:18px 16px;}
     .stat-icon{font-size:1.1rem;margin-bottom:6px;}
@@ -125,7 +117,6 @@
     .stat-value{font-size:1.1rem;font-weight:700;color:var(--forest);}
     .stat-sub{font-size:0.75rem;color:var(--text-sec);margin-top:2px;}
 
-    /* ── FAMILIES ── */
     .families-grid{display:flex;flex-wrap:wrap;gap:14px;}
     .family-card{background:#fff;border-radius:14px;border:1.5px solid rgba(122,179,138,0.18);padding:16px 20px;min-width:200px;}
     .family-name{font-weight:600;color:var(--forest);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
@@ -133,36 +124,29 @@
     .members-list{display:flex;flex-wrap:wrap;gap:6px;}
     .member-pill{background:rgba(122,179,138,0.12);border:1px solid rgba(122,179,138,0.25);color:var(--moss);border-radius:20px;padding:3px 12px;font-size:0.78rem;font-weight:500;}
 
-    /* ── CHECKLIST ── */
+    /* CHECKLIST */
     .checklist-section{max-width:640px;}
     .checklist-category{margin-bottom:24px;}
     .checklist-cat-title{font-weight:600;color:var(--forest);margin-bottom:10px;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.06em;}
     .checklist-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-radius:10px;border:1.5px solid rgba(122,179,138,0.18);margin-bottom:6px;transition:var(--transition);user-select:none;}
     .checklist-item:not(.locked-by-other){cursor:pointer;}
     .checklist-item:not(.locked-by-other):hover{border-color:var(--sage);}
-    /* unchecked */
     .check-box{width:20px;height:20px;border-radius:6px;border:2px solid var(--sage);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:var(--transition);background:#fff;}
-    /* locked by self — green */
     .checklist-item.checked-self .check-box{background:var(--moss);border-color:var(--moss);}
-    /* locked by other — amber */
     .checklist-item.locked-by-other .check-box{background:var(--amber);border-color:var(--amber);}
     .check-mark{color:#fff;font-size:0.75rem;display:none;}
-    .checklist-item.checked-self .check-mark,
-    .checklist-item.locked-by-other .check-mark{display:block;}
+    .checklist-item.checked-self .check-mark,.checklist-item.locked-by-other .check-mark{display:block;}
     .item-text{font-size:0.875rem;color:var(--text-pri);flex:1;}
-    /* lock indicator */
     .check-lock-info{display:flex;align-items:center;gap:5px;font-size:0.72rem;font-weight:600;white-space:nowrap;flex-shrink:0;}
     .lock-icon{font-size:0.85rem;}
     .lock-name-self{color:var(--moss);}
     .lock-name-other{color:var(--amber);}
 
-    /* ── NOTES ── */
     .notes-area{width:100%;min-height:220px;padding:16px;border-radius:12px;border:1.5px solid rgba(122,179,138,0.3);background:#fff;font-family:'DM Sans',sans-serif;font-size:0.9rem;color:var(--text-pri);resize:vertical;outline:none;transition:border-color .2s;}
     .notes-area:focus{border-color:var(--sage);}
     .btn-save{margin-top:10px;padding:10px 22px;border-radius:10px;background:var(--moss);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;transition:var(--transition);}
     .btn-save:hover{background:var(--forest);}
 
-    /* ── DAY BLOCKS ── */
     .day-block{background:#fff;border-radius:14px;border:1.5px solid rgba(122,179,138,0.18);margin-bottom:14px;overflow:hidden;}
     .day-header{padding:14px 18px;background:linear-gradient(135deg,rgba(46,92,62,0.07),rgba(122,179,138,0.07));display:flex;align-items:center;justify-content:space-between;}
     .day-title{font-weight:600;color:var(--forest);display:flex;align-items:center;gap:8px;}
@@ -170,14 +154,10 @@
     .day-input{width:100%;padding:10px 14px;border:1.5px solid rgba(122,179,138,0.3);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.875rem;background:#faf8f4;outline:none;transition:border-color .2s;color:var(--text-pri);}
     .day-input:focus{border-color:var(--sage);}
 
-    /* ══════════════════════════════════
-       ADVANCED COST TRACKER
-    ══════════════════════════════════ */
+    /* ADVANCED COST TRACKER */
     .costs-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px;}
     .btn-add-expense{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:10px;background:var(--amber);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;transition:var(--transition);}
     .btn-add-expense:hover{background:#c0721e;}
-
-    /* Expense entry form */
     .expense-form{background:#fff;border:1.5px solid rgba(122,179,138,0.25);border-radius:14px;padding:20px 22px;margin-bottom:20px;display:none;}
     .expense-form.open{display:block;animation:fadeIn .25s ease;}
     .expense-form-title{font-weight:600;color:var(--forest);margin-bottom:14px;font-size:0.95rem;}
@@ -189,10 +169,7 @@
     .ef-actions{display:flex;gap:10px;margin-top:4px;}
     .btn-ef-add{padding:10px 20px;border-radius:9px;background:var(--moss);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;cursor:pointer;transition:var(--transition);}
     .btn-ef-add:hover{background:var(--forest);}
-    .btn-ef-cancel{padding:10px 16px;border-radius:9px;border:1.5px solid #ddd;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;color:var(--text-sec);transition:var(--transition);}
-    .btn-ef-cancel:hover{background:rgba(0,0,0,0.04);}
-
-    /* Expenses table */
+    .btn-ef-cancel{padding:10px 16px;border-radius:9px;border:1.5px solid #ddd;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;color:var(--text-sec);}
     .costs-table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(26,58,42,0.07);}
     .costs-table th{background:var(--forest);color:rgba(245,240,232,0.8);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;padding:12px 14px;text-align:left;font-weight:600;}
     .costs-table td{padding:11px 14px;border-bottom:1px solid rgba(122,179,138,0.12);font-size:0.855rem;vertical-align:middle;}
@@ -201,8 +178,6 @@
     .btn-del-expense{background:none;border:none;color:var(--ember);cursor:pointer;font-size:1rem;padding:0 4px;opacity:0.6;transition:var(--transition);}
     .btn-del-expense:hover{opacity:1;}
     .split-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(122,179,138,0.12);border:1px solid rgba(122,179,138,0.25);color:var(--moss);border-radius:12px;padding:2px 8px;font-size:0.72rem;font-weight:600;}
-
-    /* Summary section */
     .costs-summary{margin-top:24px;}
     .costs-summary h3{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;color:var(--forest);margin-bottom:14px;}
     .summary-totals{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
@@ -210,8 +185,6 @@
     .stc-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--sage);font-weight:600;margin-bottom:4px;}
     .stc-val{font-size:1.05rem;font-weight:700;color:var(--forest);}
     .stc-sub{font-size:0.75rem;color:var(--text-sec);margin-top:2px;}
-
-    /* Settlement table */
     .settlement-section{background:#fff;border-radius:14px;border:1.5px solid rgba(122,179,138,0.18);overflow:hidden;}
     .settlement-header{padding:14px 18px;background:linear-gradient(135deg,rgba(46,92,62,0.07),rgba(122,179,138,0.07));}
     .settlement-header h4{font-weight:700;color:var(--forest);font-size:0.9rem;margin-bottom:2px;}
@@ -222,10 +195,8 @@
     .settlement-table tr:last-child td{border-bottom:none;}
     .owes-arrow{color:var(--ember);font-weight:700;margin:0 6px;}
     .amount-owed{color:var(--ember);font-weight:700;}
-    .amount-ok{color:#2a7a3a;font-weight:600;}
     .no-debts{padding:20px 18px;color:var(--text-sec);font-size:0.875rem;text-align:center;}
 
-    /* ── TOAST ── */
     #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--forest);color:#fff;padding:11px 22px;border-radius:12px;font-size:0.875rem;font-weight:500;opacity:0;transition:.3s ease;z-index:999;pointer-events:none;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
     #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
@@ -234,7 +205,6 @@
       .tabs-bar{padding:0 8px;} .tab{padding:12px 10px;font-size:0.78rem;}
       .stat-grid{grid-template-columns:1fr 1fr;}
       .nav-trip-dates{display:none;}
-      /* BUG 19 FIX: prevent nav-right overflow on narrow screens */
       .nav-right{gap:5px;}
       .trip-code-chip{display:none;}
       #user-chip-name{display:none;}
@@ -249,14 +219,12 @@
 </head>
 <body>
 
-<!-- AUTH GUARD / LOADING -->
 <div id="auth-guard">
-  <div class="guard-spinner"></div>
+  <div class="guard-spinner" id="guard-spinner"></div>
   <div class="guard-msg" id="guard-msg">Loading trip…</div>
 </div>
 
 <div id="page-shell">
-  <!-- GUEST JOINED BANNER -->
   <div id="join-banner">
     <div class="join-msg">
       <strong id="join-trip-name"></strong>
@@ -265,10 +233,8 @@
     <span class="join-role-badge">Guest Member</span>
   </div>
 
-  <!-- COMPLETED BANNER -->
   <div id="completed-banner">🏁 This trip has been completed — viewing in read-only mode.</div>
 
-  <!-- NAV -->
   <nav class="topnav">
     <div class="nav-left">
       <a href="landingpage.html" class="back-link">← My Trips</a>
@@ -288,7 +254,6 @@
     </div>
   </nav>
 
-  <!-- TABS -->
   <div class="tabs-bar">
     <button class="tab active" onclick="switchTab(event,'overview')">🗺️ Trip Info</button>
     <button class="tab"        onclick="switchTab(event,'checklist')">✅ Checklist</button>
@@ -307,7 +272,6 @@
         <button class="btn-edit-overview" id="btn-edit-overview" onclick="toggleEditOverview(true)" style="display:none;">✏️ Edit Trip</button>
       </div>
 
-      <!-- EDIT OVERVIEW FORM (owner only) -->
       <div class="overview-edit-box" id="overview-edit-box" style="display:none;">
         <h3>✏️ Edit Trip Details</h3>
         <div class="edit-grid">
@@ -338,12 +302,11 @@
           </div>
         </div>
         <div class="edit-actions">
-          <button class="btn-save-overview" onclick="saveOverview()">💾 Save Changes</button>
+          <button class="btn-save-overview" id="btn-save-overview" onclick="saveOverview()">💾 Save Changes</button>
           <button class="btn-cancel-edit" onclick="toggleEditOverview(false)">Cancel</button>
         </div>
       </div>
 
-      <!-- SHARE BOX -->
       <div class="share-box">
         <div class="share-box-top">
           <div>
@@ -363,13 +326,11 @@
 
       <div class="stat-grid" id="stat-grid"></div>
 
-      <!-- GROUP / MEMBERS -->
       <div class="members-section">
         <h3>👥 Trip Members</h3>
         <div class="members-grid" id="members-grid"></div>
       </div>
 
-      <!-- FAMILIES -->
       <div class="members-section" id="families-section">
         <h3>👨‍👩‍👧 Families &amp; Groups</h3>
         <div class="families-grid" id="families-display"></div>
@@ -394,15 +355,12 @@
       <div id="dayplan-container"></div>
     </div>
 
-    <!-- COSTS — ADVANCED -->
+    <!-- COSTS -->
     <div class="tab-panel" id="panel-costs">
       <div class="panel-head"><h2>💰 Cost Tracker</h2></div>
-
       <div class="costs-toolbar">
         <button class="btn-add-expense" onclick="toggleExpenseForm(true)">＋ Add Expense</button>
       </div>
-
-      <!-- EXPENSE ENTRY FORM -->
       <div class="expense-form" id="expense-form">
         <div class="expense-form-title">New Expense</div>
         <div class="expense-grid">
@@ -426,7 +384,7 @@
         <div class="expense-grid three">
           <div>
             <label class="ef-label">Amount ($)</label>
-            <input class="ef-input" id="ef-amount" type="number" min="0" step="0.01" placeholder="0.00" />
+            <input class="ef-input" id="ef-amount" type="number" min="0.01" step="0.01" placeholder="0.00" />
           </div>
           <div>
             <label class="ef-label">Paid By (Family/Name)</label>
@@ -449,25 +407,12 @@
           <button class="btn-ef-cancel" onclick="toggleExpenseForm(false)">Cancel</button>
         </div>
       </div>
-
-      <!-- EXPENSES TABLE -->
       <table class="costs-table" id="costs-table">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Category</th>
-            <th>Paid By</th>
-            <th>Split</th>
-            <th>Amount</th>
-            <th></th>
-          </tr>
-        </thead>
+        <thead><tr><th>Item</th><th>Category</th><th>Paid By</th><th>Split</th><th>Amount</th><th></th></tr></thead>
         <tbody id="costs-body"></tbody>
       </table>
-
-      <!-- SUMMARY & SETTLEMENT -->
       <div class="costs-summary" id="costs-summary">
-        <h3>📊 Summary & Settlement</h3>
+        <h3>📊 Summary &amp; Settlement</h3>
         <div class="summary-totals" id="summary-totals"></div>
         <div class="settlement-section">
           <div class="settlement-header">
@@ -492,9 +437,9 @@
 <div id="toast"></div>
 
 <script>
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
      FIREBASE
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   const FIREBASE_CONFIG = {
     apiKey:'AIzaSyBLGsNTiudr0Z8fGc2xc4hK4Nl96_vwPHc',
     authDomain:'camp-cbf1d.firebaseapp.com',
@@ -507,21 +452,41 @@
   const auth = firebase.auth();
   const db   = firebase.firestore();
 
-  /* ══════════════════════════════════════════════════════
-     URL PARSING
-  ══════════════════════════════════════════════════════ */
+  /* ════════════════════════════════════════════════════
+     STATE
+  ════════════════════════════════════════════════════ */
   const urlParams  = new URLSearchParams(location.search);
   const inviteCode = urlParams.get('invite') || null;
   const hashId     = location.hash.slice(1) || null;
 
-  let currentUser  = null;
-  let tripData     = null;
-  let isOwner      = false;
-  let isGuest      = false;
+  let currentUser     = null;
+  let tripData        = null;
+  let isOwner         = false;
+  let isGuest         = false;
+  /* FIX P2: store trip listener unsubscribe handle. */
+  let _tripUnsub      = null;
+  /* FIX P3: guard against parallel handleGuestInvite calls. */
+  let _joiningTrip    = false;
+  /* FIX P2: guard against loading the same trip multiple times (token refresh). */
+  let _loadedDocId    = null;
 
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
+     ONE-TIME BUTTON LISTENER
+  ════════════════════════════════════════════════════ */
+  document.getElementById('btn-logout').addEventListener('click', () =>
+    auth.signOut().then(() => window.location.replace('index.html'))
+  );
+
+  /* ef-split dropdown toggle */
+  document.getElementById('ef-split').addEventListener('change', function() {
+    const customBox = document.getElementById('ef-family-checkboxes');
+    customBox.style.display = this.value === 'custom' ? 'block' : 'none';
+    if (this.value === 'custom') populateFamilyCheckboxes();
+  });
+
+  /* ════════════════════════════════════════════════════
      AUTH GUARD
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   auth.onAuthStateChanged(async user => {
     if (!user) {
       const dest = inviteCode
@@ -538,31 +503,40 @@
       return;
     }
 
+    /* FIX P1: clear avatar before (re)setting — prevents stacked img elements on
+       each token-refresh call to onAuthStateChanged. */
+    const av = document.getElementById('user-chip-av');
+    av.innerHTML = '';
     setupUserChip(user);
 
     if (inviteCode) {
+      /* FIX P3: skip if a join is already in progress (parallel token-refresh call). */
+      if (_joiningTrip) return;
       await handleGuestInvite(inviteCode);
     } else {
+      /* FIX P2: skip if we already subscribed to this exact trip document. */
+      if (_loadedDocId === hashId) return;
       loadTripById(hashId);
     }
   });
 
-  /* ── LOGOUT BUTTON ── */
-  document.getElementById('btn-logout').addEventListener('click', () => {
-    auth.signOut().then(() => window.location.replace('index.html'));
-  });
-
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
      GUEST INVITE FLOW
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   async function handleGuestInvite(code) {
+    _joiningTrip = true; /* FIX P3 */
     setGuardMsg('Joining trip…');
     try {
       const snap = await db.collection('trips')
         .where('tripCode', '==', code.toUpperCase())
         .limit(1).get();
 
-      if (snap.empty) { setGuardMsg('Invalid invite link — trip not found.'); return; }
+      if (snap.empty) {
+        setGuardMsg('Invalid invite link — trip not found.');
+        stopGuardSpinner(); /* FIX P4 */
+        _joiningTrip = false;
+        return;
+      }
 
       const doc  = snap.docs[0];
       const data = { id: doc.id, ...doc.data() };
@@ -573,7 +547,6 @@
       }
 
       isGuest = true;
-
       const alreadyMember = (data.guestMembers || []).some(m => m.uid === currentUser.uid);
 
       if (!alreadyMember) {
@@ -595,14 +568,20 @@
     } catch (err) {
       console.error('[PlanAway] handleGuestInvite:', err);
       setGuardMsg('Error joining trip — ' + (err.message || 'please try again.'));
+      stopGuardSpinner(); /* FIX P4 */
+      _joiningTrip = false;
     }
   }
 
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
      LOAD TRIP BY DOC ID
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   function loadTripById(docId, showJoinBanner) {
-    db.collection('trips').doc(docId).onSnapshot(snap => {
+    /* FIX P2: unsubscribe previous listener before creating a new one. */
+    if (_tripUnsub) { _tripUnsub(); _tripUnsub = null; }
+    _loadedDocId = docId;
+
+    _tripUnsub = db.collection('trips').doc(docId).onSnapshot(snap => {
       if (!snap.exists) {
         showToast('Trip not found.');
         setTimeout(() => window.location.replace('landingpage.html'), 1800);
@@ -616,38 +595,40 @@
 
       if (!isOwner && !isGuest) {
         setGuardMsg('Access denied — this trip is private.');
+        stopGuardSpinner(); /* FIX P4 */
         return;
       }
 
       tripData = data;
-
       document.getElementById('auth-guard').style.display = 'none';
       document.getElementById('page-shell').style.display = 'block';
 
       if (showJoinBanner && isGuest) {
-        const banner = document.getElementById('join-banner');
         document.getElementById('join-trip-name').textContent = data.name || 'This trip';
-        banner.style.display = 'flex';
+        document.getElementById('join-banner').style.display = 'flex';
       }
 
-      /* Show edit button for owner only */
       document.getElementById('btn-edit-overview').style.display = isOwner ? 'flex' : 'none';
 
       renderTrip(data);
     }, err => {
       console.error('[PlanAway] Firestore:', err);
       setGuardMsg('Error loading trip — ' + err.code);
+      stopGuardSpinner(); /* FIX P4 */
     });
   }
 
   function setGuardMsg(msg) { document.getElementById('guard-msg').textContent = msg; }
+  /* FIX P4: hide the spinner when showing a permanent error state. */
+  function stopGuardSpinner() { document.getElementById('guard-spinner').classList.add('hidden'); }
 
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
      USER CHIP
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   function setupUserChip(user) {
     const name = (user.displayName||'').trim() || user.email?.split('@')[0] || 'Explorer';
-    const av = document.getElementById('user-chip-av');
+    const av   = document.getElementById('user-chip-av');
+    /* av is already cleared in the auth callback before this is called. */
     if (user.photoURL) {
       const img = document.createElement('img'); img.src = user.photoURL; img.alt = name; av.appendChild(img);
     } else {
@@ -656,9 +637,9 @@
     document.getElementById('user-chip-name').textContent = name.split(' ')[0];
   }
 
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
      HELPERS
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   const modeLabels = {tent:'Tent Only',rv:'RV Only',both:'Both Tent & RV',cabin:'Cabin'};
 
@@ -666,17 +647,15 @@
     if (!ds) return '—';
     return new Date(ds+'T12:00:00').toLocaleDateString('en-US', opts||{month:'short',day:'numeric',year:'numeric'});
   }
-  function fmtDateLong(ds) {
-    return fmtDate(ds,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-  }
+  function fmtDateLong(ds) { return fmtDate(ds,{weekday:'short',month:'short',day:'numeric',year:'numeric'}); }
   function nightsCount(s, e) {
     if (!s||!e) return 0;
     return Math.max(0, Math.round((new Date(e)-new Date(s))/86400000));
   }
 
-  /* ══════════════════════════════════════════════════════
-     SHARE LINK
-  ══════════════════════════════════════════════════════ */
+  /* ════════════════════════════════════════════════════
+     SHARE / COPY
+  ════════════════════════════════════════════════════ */
   function getShareUrl() {
     if (!tripData?.tripCode) return '';
     return location.origin
@@ -697,28 +676,33 @@
 
   function copyCode() {
     if (!tripData?.tripCode) return;
+    /* FIX P16: provide prompt() fallback so non-HTTPS users get visible feedback. */
     navigator.clipboard.writeText(tripData.tripCode)
       .then(() => showToast(`Invite code "${tripData.tripCode}" copied!`))
-      .catch(() => {});
+      .catch(() => { prompt('Copy this invite code:', tripData.tripCode); });
   }
 
-  /* ══════════════════════════════════════════════════════
-     EDIT OVERVIEW (Feature 6)
-  ══════════════════════════════════════════════════════ */
+  /* ════════════════════════════════════════════════════
+     EDIT OVERVIEW
+  ════════════════════════════════════════════════════ */
   function toggleEditOverview(show) {
     document.getElementById('overview-edit-box').style.display = show ? 'block' : 'none';
-    document.getElementById('btn-edit-overview').style.display = (!show && isOwner) ? 'flex' : 'none';
+    document.getElementById('btn-edit-overview').style.display  = (!show && isOwner) ? 'flex' : 'none';
     if (show && tripData) {
-      document.getElementById('edit-name').value     = tripData.name || '';
-      document.getElementById('edit-location').value = tripData.location || '';
+      /* FIX P6: always re-read from latest tripData when opening the form so
+         the fields reflect the most recent Firestore state. */
+      document.getElementById('edit-name').value     = tripData.name      || '';
+      document.getElementById('edit-location').value = tripData.location  || '';
       document.getElementById('edit-start').value    = tripData.startDate || '';
-      document.getElementById('edit-end').value      = tripData.endDate || '';
-      document.getElementById('edit-mode').value     = tripData.mode || 'both';
+      document.getElementById('edit-end').value      = tripData.endDate   || '';
+      document.getElementById('edit-mode').value     = tripData.mode      || 'both';
     }
   }
 
   async function saveOverview() {
     if (!tripData || !isOwner) return;
+    const saveBtn = document.getElementById('btn-save-overview');
+
     const name  = document.getElementById('edit-name').value.trim();
     const loc   = document.getElementById('edit-location').value.trim();
     const start = document.getElementById('edit-start').value;
@@ -727,32 +711,47 @@
 
     if (!name)  { showToast('Trip name cannot be empty.'); return; }
     if (!loc)   { showToast('Location cannot be empty.'); return; }
-    /* BUG 11 FIX: require both dates — empty dates break fmtDate, nightsCount, meals, planner */
     if (!start) { showToast('Please select a start date.'); return; }
     if (!end)   { showToast('Please select an end date.'); return; }
-    /* BUG 10 FIX: append T00:00:00 for consistent local-time parsing across all timezones */
-    if (new Date(end + 'T00:00:00') <= new Date(start + 'T00:00:00')) {
+    /* T00:00:00 ensures consistent local-time parsing across timezones. */
+    if (new Date(end+'T00:00:00') <= new Date(start+'T00:00:00')) {
       showToast('End date must be after start date.'); return;
     }
 
+    /* FIX P7: disable save button during async write to prevent double-submit. */
+    saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
     try {
       await db.collection('trips').doc(tripData.id).update({ name, location:loc, startDate:start, endDate:end, mode });
       toggleEditOverview(false);
       showToast('Trip details updated! ✅');
     } catch (err) {
       showToast('Error saving — ' + (err.message||'try again.'));
+    } finally {
+      saveBtn.disabled = false; saveBtn.textContent = '💾 Save Changes';
     }
   }
 
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
      RENDER TRIP
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   function renderTrip(d) {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const endDt = d.endDate ? new Date(d.endDate+'T23:59:59') : null;
+    const today     = new Date(); today.setHours(0,0,0,0);
+    const endDt     = d.endDate ? new Date(d.endDate+'T23:59:59') : null;
     const isCompleted = endDt && endDt < today;
 
-    if (isCompleted) document.getElementById('completed-banner').style.display = 'flex';
+    /* FIX P5: always set the banner visibility — not just when isCompleted is true.
+       This ensures it hides again if the owner edits endDate to a future date. */
+    document.getElementById('completed-banner').style.display = isCompleted ? 'flex' : 'none';
+
+    /* FIX P6: if the edit form is currently open, refresh its fields from new data
+       so the owner doesn't accidentally overwrite changes made by other users. */
+    if (document.getElementById('overview-edit-box').style.display !== 'none') {
+      document.getElementById('edit-name').value     = d.name      || '';
+      document.getElementById('edit-location').value = d.location  || '';
+      document.getElementById('edit-start').value    = d.startDate || '';
+      document.getElementById('edit-end').value      = d.endDate   || '';
+      document.getElementById('edit-mode').value     = d.mode      || 'both';
+    }
 
     /* Nav */
     document.getElementById('nav-trip-name').textContent = d.name || 'Unnamed Trip';
@@ -770,13 +769,13 @@
     const guests  = Array.isArray(d.guestMembers) ? d.guestMembers : [];
     const families = Array.isArray(d.families) ? d.families : [];
     const stats = [
-      {icon:'📍',label:'Location', value:d.location||'—',         sub:''},
-      {icon:'📅',label:'Start',    value:fmtDateLong(d.startDate), sub:''},
-      {icon:'🏁',label:'End',      value:fmtDateLong(d.endDate),   sub:''},
-      {icon:'🌙',label:'Nights',   value:nights,                   sub:''},
-      {icon:'👥',label:'Members',  value:1+guests.length,          sub:isOwner?'You + guests':'Shared trip'},
-      {icon:'🏕️',label:'Mode',     value:modeLabels[d.mode]||d.mode||'—', sub:''},
-      {icon:'🔑',label:'Invite Code', value:d.tripCode||'—',      sub:'Share to invite'},
+      {icon:'📍',label:'Location',    value:d.location||'—',              sub:''},
+      {icon:'📅',label:'Start',       value:fmtDateLong(d.startDate),     sub:''},
+      {icon:'🏁',label:'End',         value:fmtDateLong(d.endDate),       sub:''},
+      {icon:'🌙',label:'Nights',      value:nights,                       sub:''},
+      {icon:'👥',label:'Members',     value:1+guests.length,              sub:isOwner?'You + guests':'Shared trip'},
+      {icon:'🏕️',label:'Mode',        value:modeLabels[d.mode]||d.mode||'—', sub:''},
+      {icon:'🔑',label:'Invite Code', value:d.tripCode||'—',              sub:'Share to invite'},
     ];
     const sg = document.getElementById('stat-grid');
     sg.innerHTML = '';
@@ -791,18 +790,14 @@
     mg.innerHTML = '';
     mg.appendChild(makeMemberCard({
       displayName: d.ownerDisplayName || d.ownerEmail || 'Trip Owner',
-      email: d.ownerEmail || '',
-      photoURL: d.ownerPhotoURL || '',
+      email: d.ownerEmail || '', photoURL: d.ownerPhotoURL || '',
       role: 'owner', isYou: isOwner,
     }));
-    guests.forEach(g => {
-      mg.appendChild(makeMemberCard({
-        displayName: g.displayName || g.email || 'Guest',
-        email: g.email || '',
-        photoURL: g.photoURL || '',
-        role: 'member', isYou: g.uid === currentUser.uid,
-      }));
-    });
+    guests.forEach(g => mg.appendChild(makeMemberCard({
+      displayName: g.displayName || g.email || 'Guest',
+      email: g.email || '', photoURL: g.photoURL || '',
+      role: 'member', isYou: g.uid === currentUser.uid,
+    })));
 
     /* Families */
     const fd = document.getElementById('families-display');
@@ -811,15 +806,15 @@
       fd.innerHTML = '<p style="color:var(--text-sec);font-size:0.875rem;">No families added to this trip.</p>';
     } else {
       families.forEach(f => {
-        const card = document.createElement('div'); card.className = 'family-card';
+        const card    = document.createElement('div'); card.className = 'family-card';
         const members = Array.isArray(f.members) ? f.members : [];
         const nameDiv = document.createElement('div'); nameDiv.className = 'family-name';
-        const av = document.createElement('div'); av.className = 'family-avatar'; av.textContent = (f.name||'?').charAt(0).toUpperCase();
+        const av      = document.createElement('div'); av.className = 'family-avatar'; av.textContent = (f.name||'?').charAt(0).toUpperCase();
         nameDiv.appendChild(av); nameDiv.appendChild(document.createTextNode(f.name||'Family'));
         card.appendChild(nameDiv);
         const ml = document.createElement('div'); ml.className = 'members-list';
         members.length
-          ? members.forEach(m => { const p = document.createElement('span'); p.className='member-pill'; p.textContent=m; ml.appendChild(p); })
+          ? members.forEach(m => { const p=document.createElement('span'); p.className='member-pill'; p.textContent=m; ml.appendChild(p); })
           : ml.innerHTML = '<span style="color:#aaa;font-size:0.8rem;">No members listed</span>';
         card.appendChild(ml);
         fd.appendChild(card);
@@ -828,42 +823,40 @@
 
     renderChecklist(d);
 
-    /* BUG 9 FIX: Protect meal, day-planner and notes inputs from being wiped mid-typing.
-       Only re-render a section if the active (focused) element is not inside it. */
-    const active = document.activeElement;
-    const mealsEl   = document.getElementById('meals-container');
-    const dayEl     = document.getElementById('dayplan-container');
-    const notesEl   = document.getElementById('notes-area');
-    if (!mealsEl.contains(active))  renderMeals(d);
-    if (!dayEl.contains(active))    renderDayPlanner(d);
+    /* Protect inputs that the user may be actively typing in.
+       Only re-render a section if no child element currently has focus. */
+    const active  = document.activeElement;
+    const mealsEl = document.getElementById('meals-container');
+    const dayEl   = document.getElementById('dayplan-container');
+    const notesEl = document.getElementById('notes-area');
+    if (!mealsEl.contains(active))                   renderMeals(d);
+    if (!dayEl.contains(active))                     renderDayPlanner(d);
     renderCosts(d);
-    if (document.activeElement !== notesEl) document.getElementById('notes-area').value = d.notes || '';
+    if (document.activeElement !== notesEl)          document.getElementById('notes-area').value = d.notes || '';
   }
 
   function makeMemberCard({displayName, email, photoURL, role, isYou}) {
     const card = document.createElement('div'); card.className = 'member-card';
-    const av = document.createElement('div'); av.className = 'member-card-av';
+    const av   = document.createElement('div'); av.className = 'member-card-av';
     if (photoURL) {
       const img = document.createElement('img'); img.src = photoURL; img.alt = displayName; av.appendChild(img);
     } else { av.textContent = (displayName||'?').charAt(0).toUpperCase(); }
-    const info = document.createElement('div');
+    const info   = document.createElement('div');
     const nameEl = document.createElement('div'); nameEl.className = 'member-card-name';
     nameEl.textContent = displayName + (isYou ? ' (you)' : '');
     const emailEl = document.createElement('div'); emailEl.className = 'member-card-email';
     emailEl.textContent = email;
     const roleEl = document.createElement('div');
-    roleEl.className = `member-card-role ${role === 'owner' ? 'role-owner' : 'role-member'}`;
-    roleEl.textContent = role === 'owner' ? '★ Trip Owner' : '● Member';
+    roleEl.className  = `member-card-role ${role==='owner'?'role-owner':'role-member'}`;
+    roleEl.textContent = role==='owner' ? '★ Trip Owner' : '● Member';
     info.appendChild(nameEl); info.appendChild(emailEl); info.appendChild(roleEl);
     card.appendChild(av); card.appendChild(info);
     return card;
   }
 
-  /* ══════════════════════════════════════════════════════
-     CHECKLIST — LOCK SYSTEM (Feature 8)
-     checklistState[key] = { checked: true, uid, displayName, email }
-     or just boolean (legacy support)
-  ══════════════════════════════════════════════════════ */
+  /* ════════════════════════════════════════════════════
+     CHECKLIST
+  ════════════════════════════════════════════════════ */
   const CHECKLIST_CATS = {
     'Shelter & Sleeping':['Tent / Tarp','Sleeping bags','Sleeping pads','Pillows','Tarp for rain'],
     'Cooking & Food':['Camp stove','Fuel canisters','Cookware set','Utensils','Cooler + ice','Can opener'],
@@ -874,21 +867,20 @@
   function flatKey(cat, item){ return (cat+'__'+item).replace(/[^a-zA-Z0-9]/g,'_'); }
 
   function renderChecklist(trip) {
-    const container = document.getElementById('checklist-container');
+    const container  = document.getElementById('checklist-container');
     container.innerHTML = '';
     const checkState = trip.checklistState || {};
-    const myName = (currentUser.displayName || '').trim() || currentUser.email?.split('@')[0] || 'Someone';
+    const myName     = (currentUser.displayName||'').trim() || currentUser.email?.split('@')[0] || 'Someone';
 
     Object.entries(CHECKLIST_CATS).forEach(([cat, items]) => {
       const section = document.createElement('div'); section.className = 'checklist-category';
-      const title = document.createElement('div'); title.className = 'checklist-cat-title'; title.textContent = cat;
+      const title   = document.createElement('div'); title.className = 'checklist-cat-title'; title.textContent = cat;
       section.appendChild(title);
 
       items.forEach(item => {
-        const key = flatKey(cat, item);
+        const key   = flatKey(cat, item);
         const state = checkState[key];
 
-        /* Normalise: state can be boolean (legacy) or object */
         let isChecked = false, checkedByUid = null, checkedByName = '';
         if (state && typeof state === 'object') {
           isChecked     = state.checked;
@@ -901,40 +893,33 @@
         const isMine      = isChecked && checkedByUid === currentUser.uid;
         const isOtherLock = isChecked && checkedByUid && checkedByUid !== currentUser.uid;
 
-        const row = document.createElement('div');
-        row.className = 'checklist-item' + (isMine ? ' checked-self' : '') + (isOtherLock ? ' locked-by-other' : '');
+        const row  = document.createElement('div');
+        row.className = 'checklist-item' + (isMine?'  checked-self':'') + (isOtherLock?' locked-by-other':'');
 
         const box  = document.createElement('div'); box.className = 'check-box';
         const mark = document.createElement('span'); mark.className = 'check-mark'; mark.textContent = '✓';
         box.appendChild(mark);
-
         const text = document.createElement('span'); text.className = 'item-text'; text.textContent = item;
-
         row.appendChild(box); row.appendChild(text);
 
-        /* Lock info badge */
         if (isChecked) {
           const lockInfo = document.createElement('div'); lockInfo.className = 'check-lock-info';
           const lockIcon = document.createElement('span'); lockIcon.className = 'lock-icon'; lockIcon.textContent = '🔒';
           const lockName = document.createElement('span');
-          lockName.className = isMine ? 'lock-name-self' : 'lock-name-other';
+          lockName.className  = isMine ? 'lock-name-self' : 'lock-name-other';
           lockName.textContent = isMine ? 'You' : checkedByName;
           lockInfo.appendChild(lockIcon); lockInfo.appendChild(lockName);
           row.appendChild(lockInfo);
         }
 
-        /* Click handler: can only check/uncheck own lock */
         if (!isOtherLock) {
           row.addEventListener('click', () => {
-            const nowChecked = !isMine; // toggle
+            const nowChecked = !isMine;
             const update = {};
             if (nowChecked) {
               update[`checklistState.${key}`] = {
-                checked:     true,
-                uid:         currentUser.uid,
-                displayName: myName,
-                email:       currentUser.email,
-                lockedAt:    new Date().toISOString(),
+                checked:true, uid:currentUser.uid, displayName:myName,
+                email:currentUser.email, lockedAt:new Date().toISOString(),
               };
             } else {
               update[`checklistState.${key}`] = firebase.firestore.FieldValue.delete();
@@ -943,17 +928,15 @@
               .catch(e => console.warn('[PlanAway] checklist:', e));
           });
         }
-
         section.appendChild(row);
       });
-
       container.appendChild(section);
     });
   }
 
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
      MEALS
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   function renderMeals(trip) {
     const container = document.getElementById('meals-container');
     container.innerHTML = '';
@@ -971,7 +954,7 @@
       body.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;';
       ['breakfast','lunch','dinner'].forEach(meal => {
         const wrap = document.createElement('div');
-        const lbl = document.createElement('div');
+        const lbl  = document.createElement('div');
         lbl.style.cssText = 'font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--sage);font-weight:600;margin-bottom:6px;';
         lbl.textContent = meal.charAt(0).toUpperCase()+meal.slice(1);
         const inp = document.createElement('input');
@@ -988,9 +971,9 @@
     }
   }
 
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
      DAY PLANNER
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   function renderDayPlanner(trip) {
     const container = document.getElementById('dayplan-container');
     container.innerHTML = '';
@@ -1000,12 +983,12 @@
       const date = new Date(trip.startDate+'T12:00:00'); date.setDate(date.getDate()+i);
       const dayLabel = date.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
       const activity = (trip.dayplan&&trip.dayplan[`day${i}`])||'';
-      const block = document.createElement('div'); block.className = 'day-block';
+      const block  = document.createElement('div'); block.className = 'day-block';
       const header = document.createElement('div'); header.className = 'day-header';
       const titleEl = document.createElement('div'); titleEl.className = 'day-title'; titleEl.textContent = `🏕️ Day ${i+1} — ${dayLabel}`;
       header.appendChild(titleEl); block.appendChild(header);
       const body = document.createElement('div'); body.className = 'day-body';
-      const inp = document.createElement('input');
+      const inp  = document.createElement('input');
       inp.type='text'; inp.className='day-input'; inp.placeholder="What's planned? (hike, swim, explore…)";
       inp.value = activity;
       inp.addEventListener('blur', () => {
@@ -1017,34 +1000,25 @@
     }
   }
 
-  /* ══════════════════════════════════════════════════════
-     COSTS — ADVANCED (Feature 7)
-  ══════════════════════════════════════════════════════ */
-
-  /* Split dropdown toggle */
-  document.getElementById('ef-split').addEventListener('change', function() {
-    const customBox = document.getElementById('ef-family-checkboxes');
-    customBox.style.display = this.value === 'custom' ? 'block' : 'none';
-    if (this.value === 'custom') populateFamilyCheckboxes();
-  });
-
+  /* ════════════════════════════════════════════════════
+     COSTS
+  ════════════════════════════════════════════════════ */
   function populateFamilyCheckboxes() {
     const container = document.getElementById('ef-family-checks');
     container.innerHTML = '';
     const families = Array.isArray(tripData?.families) ? tripData.families : [];
     if (!families.length) {
-      container.innerHTML = '<p style="color:var(--text-sec);font-size:0.82rem;">No families defined on this trip. Go to Trip Info to add families.</p>';
+      container.innerHTML = '<p style="color:var(--text-sec);font-size:0.82rem;">No families defined. Go to Trip Info to add families.</p>';
       return;
     }
     families.forEach(f => {
       const label = document.createElement('label');
       label.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:0.875rem;color:var(--text-pri);cursor:pointer;';
       const cb = document.createElement('input');
-      cb.type = 'checkbox'; cb.value = f.name; cb.name = 'ef-family-cb';
+      cb.type='checkbox'; cb.value=f.name; cb.name='ef-family-cb';
       cb.style.cssText = 'width:16px;height:16px;accent-color:var(--moss);cursor:pointer;';
       cb.checked = true;
-      label.appendChild(cb);
-      label.appendChild(document.createTextNode(f.name));
+      label.appendChild(cb); label.appendChild(document.createTextNode(f.name));
       container.appendChild(label);
     });
   }
@@ -1053,56 +1027,53 @@
     const form = document.getElementById('expense-form');
     form.classList.toggle('open', open);
     if (open) {
-      document.getElementById('ef-item').value    = '';
-      document.getElementById('ef-amount').value  = '';
-      document.getElementById('ef-paidby').value  = '';
-      document.getElementById('ef-split').value   = 'all';
-      /* BUG 18 FIX: reset category to default when re-opening the form */
-      document.getElementById('ef-category').value = 'Food';
+      document.getElementById('ef-item').value     = '';
+      document.getElementById('ef-amount').value   = '';
+      document.getElementById('ef-paidby').value   = '';
+      document.getElementById('ef-split').value    = 'all';
+      document.getElementById('ef-category').value = 'Food'; /* always reset category */
       document.getElementById('ef-family-checkboxes').style.display = 'none';
       setTimeout(() => document.getElementById('ef-item').focus(), 100);
     }
   }
 
   async function addExpense() {
-    const item    = document.getElementById('ef-item').value.trim();
-    const amount  = parseFloat(document.getElementById('ef-amount').value) || 0;
-    const paidBy  = document.getElementById('ef-paidby').value.trim();
-    const cat     = document.getElementById('ef-category').value;
+    const item      = document.getElementById('ef-item').value.trim();
+    const rawAmount = parseFloat(document.getElementById('ef-amount').value);
+    const paidBy    = document.getElementById('ef-paidby').value.trim();
+    const cat       = document.getElementById('ef-category').value;
     const splitMode = document.getElementById('ef-split').value;
 
-    if (!item)   { showToast('Please enter an item description.'); return; }
-    if (!amount) { showToast('Please enter an amount.'); return; }
-    if (!paidBy) { showToast('Please enter who paid.'); return; }
+    if (!item)                          { showToast('Please enter an item description.'); return; }
+    if (!rawAmount || rawAmount <= 0)   { showToast('Please enter a positive amount.'); return; } /* FIX P12 */
+    if (!paidBy)                        { showToast('Please enter who paid.'); return; }
 
     let splitFamilies = [];
     if (splitMode === 'all') {
       const families = Array.isArray(tripData?.families) ? tripData.families : [];
-      splitFamilies = families.map(f => f.name);
+      splitFamilies  = families.map(f => f.name);
       if (!splitFamilies.length) splitFamilies = ['All'];
     } else {
-      const cbs = document.querySelectorAll('input[name="ef-family-cb"]:checked');
+      const cbs   = document.querySelectorAll('input[name="ef-family-cb"]:checked');
       splitFamilies = Array.from(cbs).map(c => c.value);
       if (!splitFamilies.length) { showToast('Select at least one family to split between.'); return; }
     }
 
-    /* BUG 13 FIX: use crypto.randomUUID() for collision-proof IDs instead of Date.now() */
     const expId = (typeof crypto !== 'undefined' && crypto.randomUUID)
       ? crypto.randomUUID()
       : Math.random().toString(36).slice(2) + Date.now().toString(36);
 
     const expense = {
-      id: expId,
-      item, category:cat, paidBy, amount,
+      id: expId, item, category:cat, paidBy, amount:rawAmount,
       splitBetween: splitFamilies,
       addedAt: new Date().toISOString(),
     };
 
     try {
-      /* BUG 15 FIX: use Firestore transaction so concurrent adds don't overwrite each other */
+      /* Firestore transaction prevents concurrent-add overwrites. */
       const tripRef = db.collection('trips').doc(tripData.id);
       await db.runTransaction(async tx => {
-        const doc = await tx.get(tripRef);
+        const doc     = await tx.get(tripRef);
         const current = Array.isArray(doc.data()?.costs) ? doc.data().costs : [];
         tx.update(tripRef, { costs: [...current, expense] });
       });
@@ -1115,12 +1086,11 @@
 
   async function deleteExpense(expId) {
     if (!tripData) return;
-    /* BUG 14 FIX: use Firestore transaction so concurrent deletes don't resurrect
-       each other's deletions from stale in-memory copies. */
     try {
+      /* Firestore transaction prevents concurrent-delete resurrection. */
       const tripRef = db.collection('trips').doc(tripData.id);
       await db.runTransaction(async tx => {
-        const doc = await tx.get(tripRef);
+        const doc     = await tx.get(tripRef);
         const current = Array.isArray(doc.data()?.costs) ? doc.data().costs : [];
         tx.update(tripRef, { costs: current.filter(c => c.id !== expId) });
       });
@@ -1131,9 +1101,9 @@
   }
 
   function renderCosts(trip) {
-    const costs = Array.isArray(trip.costs) ? trip.costs : [];
-    const families = Array.isArray(trip.families) ? trip.families.map(f => f.name) : [];
-    const tbody = document.getElementById('costs-body');
+    const costs   = Array.isArray(trip.costs) ? trip.costs : [];
+    const families = Array.isArray(trip.families) ? trip.families.map(f=>f.name) : [];
+    const tbody   = document.getElementById('costs-body');
     tbody.innerHTML = '';
 
     if (!costs.length) {
@@ -1143,132 +1113,97 @@
       tr.appendChild(td); tbody.appendChild(tr);
     } else {
       costs.forEach(c => {
-        const tr = document.createElement('tr');
+        const tr         = document.createElement('tr');
         const splitLabel = Array.isArray(c.splitBetween) ? c.splitBetween.join(', ') : (c.splitBetween||'All');
-        const perFamily = Array.isArray(c.splitBetween) && c.splitBetween.length > 0
-          ? ` ($${((c.amount||0)/c.splitBetween.length).toFixed(2)} each)`
+        const perFamily  = Array.isArray(c.splitBetween) && c.splitBetween.length > 0
+          ? `$${((c.amount||0)/c.splitBetween.length).toFixed(2)} each`
           : '';
-        [
-          c.item||'',
-          c.category||'',
-          c.paidBy||'',
-          '',  // split — rendered as badge
-          `$${(c.amount||0).toFixed(2)}`,
-          '',  // delete
-        ].forEach((val, idx) => {
+        [c.item||'', c.category||'', c.paidBy||'', '', `$${(c.amount||0).toFixed(2)}`, ''].forEach((val,idx) => {
           const td = document.createElement('td');
-          if (idx === 3) {
-            // split badge
+          if (idx===3) {
             td.innerHTML = `<span class="split-badge" title="${esc(perFamily)}">${esc(splitLabel.length>30?splitLabel.slice(0,28)+'…':splitLabel)}</span>`;
-          } else if (idx === 5) {
-            // delete button (owner only)
+          } else if (idx===5) {
             if (isOwner) {
-              const btn = document.createElement('button'); btn.className='btn-del-expense'; btn.textContent='✕';
-              btn.title='Remove expense';
+              const btn=document.createElement('button'); btn.className='btn-del-expense'; btn.textContent='✕'; btn.title='Remove expense';
               btn.addEventListener('click', () => deleteExpense(c.id));
               td.appendChild(btn);
             }
-          } else {
-            td.textContent = val;
-          }
+          } else { td.textContent = val; }
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
       });
     }
-
-    /* Settlement calculations */
     renderSettlement(costs, families);
   }
 
-  function renderSettlement(costs, families) {
-    /* Build all known parties from expenses — exclude the 'All' sentinel */
+  function renderSettlement(costs) {
+    /* Collect parties — skip the 'All' sentinel (it is not a real party). */
     const allParties = new Set();
     costs.forEach(c => {
       if (c.paidBy) allParties.add(c.paidBy);
-      /* BUG 12 FIX: skip the 'All' placeholder — it has no meaning as a real party
-         in the settlement ledger and produces nonsensical "All owes X" rows. */
-      if (Array.isArray(c.splitBetween)) {
-        c.splitBetween.forEach(f => { if (f !== 'All') allParties.add(f); });
+      if (Array.isArray(c.splitBetween)) c.splitBetween.forEach(f => { if (f!=='All') allParties.add(f); });
+    });
+
+    const paid = {}, owes = {};
+    allParties.forEach(p => { paid[p]=0; owes[p]=0; });
+
+    costs.forEach(c => {
+      const amt   = c.amount || 0;
+      if (c.paidBy && allParties.has(c.paidBy)) paid[c.paidBy] += amt;
+      const split = Array.isArray(c.splitBetween) && c.splitBetween.length > 0 ? c.splitBetween : [];
+      if (split.length) {
+        const share = amt / split.length;
+        split.forEach(p => { if (!owes[p]) owes[p]=0; owes[p]+=share; });
       }
     });
 
-    /* Per-party: total paid, total owed */
-    const paid  = {}; // how much each party paid in total
-    const owes  = {}; // how much each party owes in total
-
-    allParties.forEach(p => { paid[p] = 0; owes[p] = 0; });
-
-    costs.forEach(c => {
-      const amt = c.amount || 0;
-      if (c.paidBy && allParties.has(c.paidBy)) paid[c.paidBy] += amt;
-
-      const split = Array.isArray(c.splitBetween) && c.splitBetween.length > 0 ? c.splitBetween : ['All'];
-      const share = amt / split.length;
-      split.forEach(p => {
-        if (!owes[p]) owes[p] = 0;
-        owes[p] += share;
-      });
-    });
-
-    /* Net balance: positive = owed money back, negative = owes money */
     const balances = {};
     allParties.forEach(p => { balances[p] = (paid[p]||0) - (owes[p]||0); });
 
     /* Summary cards */
-    const summaryEl = document.getElementById('summary-totals');
+    const summaryEl  = document.getElementById('summary-totals');
     summaryEl.innerHTML = '';
-    const totalSpend = costs.reduce((s, c) => s + (c.amount||0), 0);
-
-    // Total spend card
-    const totalCard = document.createElement('div'); totalCard.className = 'summary-total-card';
+    const totalSpend = costs.reduce((s,c) => s+(c.amount||0), 0);
+    const totalCard  = document.createElement('div'); totalCard.className = 'summary-total-card';
     totalCard.innerHTML = `<div class="stc-label">Total Spend</div><div class="stc-val">$${totalSpend.toFixed(2)}</div><div class="stc-sub">${costs.length} expense${costs.length!==1?'s':''}</div>`;
     summaryEl.appendChild(totalCard);
 
-    // Per-party cards
     Array.from(allParties).forEach(p => {
-      const bal = balances[p] || 0;
+      const bal  = balances[p] || 0;
       const card = document.createElement('div'); card.className = 'summary-total-card';
+      const netColor = bal>=0 ? 'color:#2a7a3a' : 'color:var(--ember)';
+      const netSign  = bal>=0 ? '+' : '';
       card.innerHTML = `
         <div class="stc-label">${esc(p)}</div>
         <div class="stc-val">Paid $${(paid[p]||0).toFixed(2)}</div>
-        <div class="stc-sub">Owes $${(owes[p]||0).toFixed(2)} · Net ${bal>=0?'<span style="color:#2a7a3a">+':'<span style="color:var(--ember)'}$${Math.abs(bal).toFixed(2)}</span></div>`;
+        <div class="stc-sub">Owes $${(owes[p]||0).toFixed(2)} · Net <span style="${netColor}">${netSign}$${Math.abs(bal).toFixed(2)}</span></div>`;
       summaryEl.appendChild(card);
     });
 
-    /* Debt settlement — simplified greedy algorithm */
+    /* Greedy settlement */
     const settlementEl = document.getElementById('settlement-body');
     settlementEl.innerHTML = '';
 
-    const creditors = []; // owed money back
-    const debtors   = []; // owe money
+    const creditors = [], debtors = [];
     allParties.forEach(p => {
       const bal = balances[p];
-      if (bal > 0.005) creditors.push({ name: p, amount: bal });
-      else if (bal < -0.005) debtors.push({ name: p, amount: Math.abs(bal) });
+      if (bal > 0.005)  creditors.push({name:p, amount:bal});
+      else if (bal < -0.005) debtors.push({name:p, amount:Math.abs(bal)});
     });
 
     if (!creditors.length && !debtors.length) {
       settlementEl.innerHTML = `<div class="no-debts">🎉 Everyone's square! No settlements needed.</div>`;
       return;
     }
-    if (!debtors.length && costs.length > 0) {
-      settlementEl.innerHTML = `<div class="no-debts">✅ Balances are even — no transfers needed.</div>`;
-      return;
-    }
 
-    // Greedy settle
     const settlements = [];
-    const c2 = creditors.map(x=>({...x}));
-    const d2 = debtors.map(x=>({...x}));
-    let ci = 0, di = 0;
-    while (ci < c2.length && di < d2.length) {
+    const c2 = creditors.map(x=>({...x})), d2 = debtors.map(x=>({...x}));
+    let ci=0, di=0;
+    while (ci<c2.length && di<d2.length) {
       const transfer = Math.min(c2[ci].amount, d2[di].amount);
-      if (transfer > 0.005) {
-        settlements.push({ from: d2[di].name, to: c2[ci].name, amount: transfer });
-      }
-      c2[ci].amount -= transfer;
-      d2[di].amount -= transfer;
+      if (transfer > 0.005) settlements.push({from:d2[di].name, to:c2[ci].name, amount:transfer});
+      c2[ci].amount -= transfer; d2[di].amount -= transfer;
       if (c2[ci].amount < 0.005) ci++;
       if (d2[di].amount < 0.005) di++;
     }
@@ -1294,18 +1229,18 @@
     settlementEl.appendChild(table);
   }
 
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
      NOTES
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   function saveNotes() {
     db.collection('trips').doc(tripData.id).update({ notes: document.getElementById('notes-area').value })
       .then(() => showToast('Notes saved!'))
       .catch(() => showToast('Error saving — try again.'));
   }
 
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
      TABS
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   function switchTab(evt, name) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -1313,9 +1248,9 @@
     document.getElementById(`panel-${name}`).classList.add('active');
   }
 
-  /* ══════════════════════════════════════════════════════
+  /* ════════════════════════════════════════════════════
      TOAST
-  ══════════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════════ */
   let _toastTimer = null;
   function showToast(msg) {
     const el = document.getElementById('toast');
