@@ -313,15 +313,28 @@
     statusEl.textContent = '';
   }
 
-  /* ── AUTH STATE: if already signed in, go straight to landingpage ── */
+  /* ── INVITE CODE — preserve through sign-in round-trip ── */
+  const urlParams  = new URLSearchParams(location.search);
+  const inviteCode = urlParams.get('invite') || null;
+
+  /* Destination after successful sign-in */
+  function postLoginDest() {
+    if (inviteCode) return `planner.html?invite=${encodeURIComponent(inviteCode)}`;
+    return 'landingpage.html';
+  }
+
+  /* Show a hint if arriving via invite link */
+  if (inviteCode) {
+    showStatus(`You've been invited to a camping trip! Sign in with Google to join.`, 'info');
+  }
+
+  /* ── AUTH STATE: if already signed in, redirect immediately ── */
   auth.onAuthStateChanged(user => {
     loader.style.display = 'none';
     if (user) {
-      /* Already authenticated — send to landing page immediately */
-      window.location.replace('landingpage.html');
+      window.location.replace(postLoginDest());
       return;
     }
-    /* Not signed in — show login */
     viewLogin.classList.add('active');
     btnSignin.disabled = false;
   });
@@ -343,7 +356,7 @@
 
     try {
       await auth.signInWithPopup(provider);
-      /* onAuthStateChanged fires → user found → redirect to landingpage */
+      /* onAuthStateChanged fires → user found → postLoginDest() handles redirect */
     } catch (err) {
       signingIn = false;
       btnSignin.disabled = false;
@@ -352,10 +365,12 @@
       if (err.code === 'auth/popup-closed-by-user' ||
           err.code === 'auth/cancelled-popup-request') return;
 
-      /* Popup blocked — fall back to redirect */
+      /* Popup blocked — fall back to redirect, preserving invite param */
       if (err.code === 'auth/popup-blocked') {
         showStatus('Popup was blocked. Redirecting to sign-in…', 'info');
         try {
+          /* Store invite in sessionStorage so redirect result can retrieve it */
+          if (inviteCode) sessionStorage.setItem('pendingInvite', inviteCode);
           await auth.signInWithRedirect(provider);
         } catch (e) {
           showStatus('Sign-in failed. Please try again.', 'error');
@@ -373,7 +388,16 @@
   });
 
   /* Handle redirect result (popup-blocked fallback) */
-  auth.getRedirectResult().catch(err => {
+  auth.getRedirectResult().then(result => {
+    if (result && result.user) {
+      /* Restore pending invite if it came through redirect */
+      const pending = sessionStorage.getItem('pendingInvite');
+      sessionStorage.removeItem('pendingInvite');
+      if (pending) {
+        window.location.replace(`planner.html?invite=${encodeURIComponent(pending)}`);
+      }
+    }
+  }).catch(err => {
     if (err.code && err.code !== 'auth/no-auth-event') {
       showStatus('Sign-in failed. Please try again.', 'error');
     }
