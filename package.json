@@ -1,0 +1,25 @@
+{
+  "name": "claude-planner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "planaway-unit.test.js",
+  "scripts": {
+    "test": "vitest run planaway-unit.test.js",
+    "test:login": "vitest run planaway-login.test.js",
+    "test:bugs": "vitest run planaway-bugs.test.js",
+    "test:extended": "vitest run planaway-extended.test.js",
+    "test:firebase": "vitest run planaway-firebase.test.js",
+    "test:all": "vitest run planaway-unit.test.js planaway-login.test.js planaway-bugs.test.js planaway-extended.test.js planaway-firebase.test.js"
+    
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "vitest": "^4.1.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0"
+  }
+}
